@@ -35,9 +35,9 @@ public:
   Column() : Width(0) { }
 
 public:
-  unsigned size() const { return Rows.size(); }
+  size_t size() const { return Rows.size(); }
 
-  unsigned GetWidth() const { return Width; }
+  size_t GetWidth() const { return Width; }
 
 public:
   Column &operator<<(llvm::StringRef Str) {
@@ -55,7 +55,7 @@ public:
 
 private:
   RowsContainer Rows;
-  unsigned Width;
+  size_t Width;
 };
 
 //===----------------------------------------------------------------------===//

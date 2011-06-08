@@ -58,12 +58,12 @@ public:
   DimensionInfo(llvm::SmallVector<size_t, 4> &GlobalWorkOffsets,
                 llvm::SmallVector<size_t, 4> &GlobalWorkSizes,
                 llvm::SmallVector<size_t, 4> &LocalWorkSizes) {
-    unsigned E;
+    size_t E;
 
     E = std::min(GlobalWorkOffsets.size(), GlobalWorkSizes.size());
     E = std::min(E, LocalWorkSizes.size());
 
-    for(unsigned I = 0; I < E; ++I)
+    for(size_t I = 0; I < E; ++I)
       Info.push_back(InfoWrapper(GlobalWorkOffsets[I],
                                  GlobalWorkSizes[I],
                                  LocalWorkSizes[I]));

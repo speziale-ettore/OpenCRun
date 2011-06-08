@@ -274,7 +274,7 @@ void SayHelloFromAllNativeDevices(const cl::Platform &Plat) {
     cl_context_properties Props[] =
       { CL_CONTEXT_PLATFORM,
         reinterpret_cast<cl_context_properties>(Plat()),
-        NULL
+        0
       };
     cl::Context Ctx(std::vector<cl::Device>(1, *I), Props, DebugPrinter);
     cl::CommandQueue Queue(Ctx, *I);
@@ -342,7 +342,7 @@ void SayNDHelloFromAllDevices(const cl::Platform &Plat) {
   cl_context_properties Props[] =
     { CL_CONTEXT_PLATFORM,
       reinterpret_cast<cl_context_properties>(Plat()),
-      NULL
+      0
     };
   cl::Context Ctx(Devs, Props, DebugPrinter);
 

@@ -91,8 +91,10 @@ protected:
 
       // Parse the number.
       llvm::StringRef RawNum(J, I - J);
-      if(RawNum.getAsInteger(0, Num))
+      unsigned long long BufNum;
+      if(RawNum.getAsInteger(0, BufNum))
         return false;
+      Num = BufNum;
     }
 
     return true;
@@ -120,12 +122,13 @@ protected:
     for(J = I; J < Str.size() && std::isspace(Str[J]); ++J) { }
     llvm::StringRef RawMult = Str.substr(J);
 
-    if(RawSize.getAsInteger(0, Size))
+    unsigned long long BufSize;
+    if(RawSize.getAsInteger(0, BufSize))
       return false;
 
-    Size *= llvm::StringSwitch<unsigned>(RawMult)
-              .Cases("K", "kB", 1024)
-              .Default(0);
+    Size = BufSize * llvm::StringSwitch<unsigned long long>(RawMult)
+                       .Cases("K", "kB", 1024)
+                       .Default(0);
 
     return Size != 0;
   }
