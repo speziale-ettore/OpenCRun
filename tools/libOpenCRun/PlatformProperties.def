@@ -1,0 +1,6 @@
+
+PROPERTY(CL_PLATFORM_PROFILE, GetProfile, char, llvm::StringRef)
+PROPERTY(CL_PLATFORM_VERSION, GetVersion, char, llvm::StringRef)
+PROPERTY(CL_PLATFORM_NAME, GetName, char, llvm::StringRef)
+PROPERTY(CL_PLATFORM_VENDOR, GetVendor, char, llvm::StringRef)
+PROPERTY(CL_PLATFORM_EXTENSIONS, GetExtensions, char, llvm::StringRef)

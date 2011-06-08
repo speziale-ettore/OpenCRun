@@ -1,0 +1,3 @@
+
+PROPERTY(CL_CONTEXT_REFERENCE_COUNT, GetReferenceCount, cl_uint, unsigned)
+PROPERTY(CL_CONTEXT_NUM_DEVICES, devices_size, cl_uint, size_t)

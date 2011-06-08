@@ -1,0 +1,165 @@
+
+// CL_DEVICE_TYPE manually implemented.
+
+PROPERTY(CL_DEVICE_VENDOR_ID, GetVendorID, cl_uint, unsigned)
+PROPERTY(CL_DEVICE_MAX_COMPUTE_UNITS, GetMaxComputeUnits, cl_uint, unsigned)
+PROPERTY(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS,
+         GetMaxWorkItemDimensions,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_MAX_WORK_ITEM_SIZES,
+         GetMaxWorkItemSizes,
+         size_t,
+         opencrun::DeviceInfo::MaxWorkItemSizesContainer &)
+PROPERTY(CL_DEVICE_MAX_WORK_GROUP_SIZE, GetMaxWorkGroupSize, size_t, size_t)
+PROPERTY(CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR,
+         GetPreferredCharVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT,
+         GetPreferredShortVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT,
+         GetPreferredIntVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG,
+         GetPreferredLongVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT,
+         GetPreferredFloatVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE,
+         GetPreferredDoubleVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF,
+         GetPreferredHalfVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR,
+         GetNativeCharVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT,
+         GetNativeShortVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_NATIVE_VECTOR_WIDTH_INT,
+         GetNativeIntVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG,
+         GetNativeLongVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT,
+         GetNativeFloatVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE,
+         GetNativeDoubleVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF,
+         GetNativeHalfVectorWidth,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_MAX_CLOCK_FREQUENCY, GetMaxClockFrequency, cl_uint, unsigned)
+PROPERTY(CL_DEVICE_ADDRESS_BITS, GetAddressBits, cl_ulong, long)
+
+PROPERTY(CL_DEVICE_MAX_MEM_ALLOC_SIZE, GetMaxMemoryAllocSize, cl_ulong, size_t)
+
+PROPERTY(CL_DEVICE_IMAGE_SUPPORT, HasImageSupport, cl_bool, bool)
+PROPERTY(CL_DEVICE_MAX_READ_IMAGE_ARGS, GetMaxReadableImages, cl_uint, unsigned)
+PROPERTY(CL_DEVICE_MAX_WRITE_IMAGE_ARGS,
+         GetMaxWriteableImages,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_IMAGE2D_MAX_WIDTH, Get2DImageMaxWidth, size_t, size_t)
+PROPERTY(CL_DEVICE_IMAGE2D_MAX_HEIGHT, Get2DImageMaxHeight, size_t, size_t)
+PROPERTY(CL_DEVICE_IMAGE3D_MAX_WIDTH, Get3DImageMaxWidth, size_t, size_t)
+PROPERTY(CL_DEVICE_IMAGE3D_MAX_HEIGHT, Get3DImageMaxHeight, size_t, size_t)
+PROPERTY(CL_DEVICE_IMAGE3D_MAX_DEPTH, Get3DImageMaxDepth, size_t, size_t)
+PROPERTY(CL_DEVICE_MAX_SAMPLERS, GetMaxSamplers, cl_uint, unsigned)
+
+PROPERTY(CL_DEVICE_MAX_PARAMETER_SIZE, GetMaxParameterSize, size_t, size_t)
+
+PROPERTY(CL_DEVICE_MEM_BASE_ADDR_ALIGN,
+         GetMemoryBaseAddressAlignment,
+         cl_uint,
+         unsigned)
+PROPERTY(CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE,
+         GetMinimumDataTypeAlignment,
+         cl_uint,
+         unsigned)
+
+PROPERTY(CL_DEVICE_SINGLE_FP_CONFIG,
+         GetSinglePrecisionFPCapabilities,
+         cl_bitfield,
+         unsigned)
+
+PROPERTY(CL_DEVICE_GLOBAL_MEM_CACHE_TYPE,
+         GetGlobalMemoryCacheType,
+         cl_device_mem_cache_type,
+         opencrun::DeviceInfo::CacheType)
+PROPERTY(CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE,
+         GetGlobalMemoryCachelineSize,
+         cl_uint,
+         size_t)
+PROPERTY(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE,
+         GetGlobalMemoryCacheSize,
+         cl_ulong,
+         size_t)
+PROPERTY(CL_DEVICE_GLOBAL_MEM_SIZE,
+         GetGlobalMemorySize,
+         cl_ulong,
+         size_t)
+
+PROPERTY(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,
+         GetMaxConstantBufferSize,
+         cl_ulong,
+         size_t)
+PROPERTY(CL_DEVICE_MAX_CONSTANT_ARGS,
+         GetMaxConstantArguments,
+         cl_uint,
+         unsigned)
+
+PROPERTY(CL_DEVICE_LOCAL_MEM_TYPE,
+         GetLocalMemoryType,
+         cl_device_local_mem_type,
+         opencrun::DeviceInfo::LocalMemoryType)
+PROPERTY(CL_DEVICE_LOCAL_MEM_SIZE, GetLocalMemorySize, cl_ulong, size_t)
+PROPERTY(CL_DEVICE_ERROR_CORRECTION_SUPPORT,
+         HasErrorCorrectionSupport,
+         cl_bool,
+         bool)
+
+PROPERTY(CL_DEVICE_HOST_UNIFIED_MEMORY, HasHostUnifiedMemory, cl_bool, bool)
+
+PROPERTY(CL_DEVICE_PROFILING_TIMER_RESOLUTION,
+         GetProfilingTimerResolution,
+         size_t,
+         unsigned long)
+
+PROPERTY(CL_DEVICE_ENDIAN_LITTLE, IsLittleEndian, cl_bool, bool)
+PROPERTY(CL_DEVICE_AVAILABLE, IsAvailable, cl_bool, bool)
+
+PROPERTY(CL_DEVICE_COMPILER_AVAILABLE, IsCompilerAvailable, cl_bool, bool)
+
+PROPERTY(CL_DEVICE_EXECUTION_CAPABILITIES,
+         GetExecutionCapabilities,
+         cl_device_exec_capabilities,
+         unsigned)
+
+PROPERTY(CL_DEVICE_QUEUE_PROPERTIES,
+         GetQueueProperties,
+         cl_command_queue_properties,
+         unsigned)
+
+// CL_PLATFORM manually implemented.
+
+PROPERTY(CL_DEVICE_NAME, GetName, char, llvm::StringRef)

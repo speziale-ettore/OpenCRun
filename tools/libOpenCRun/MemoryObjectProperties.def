@@ -1,0 +1,2 @@
+
+PROPERTY(CL_MEM_REFERENCE_COUNT, GetReferenceCount, cl_uint, unsigned)

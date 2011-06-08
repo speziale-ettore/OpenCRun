@@ -1,0 +1,5 @@
+
+PROPERTY(CL_QUEUE_CONTEXT, GetContext, cl_context, opencrun::Context &)
+PROPERTY(CL_QUEUE_DEVICE, GetDevice, cl_device_id, opencrun::Device &)
+PROPERTY(CL_QUEUE_REFERENCE_COUNT, GetReferenceCount, cl_uint, unsigned)
+// CL_QUEUE_PROPERTIES manually defined.
