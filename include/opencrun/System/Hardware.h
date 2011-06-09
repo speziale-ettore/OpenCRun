@@ -170,7 +170,7 @@ class HardwareNode;
 
 class HardwareCPU : public HardwareComponent, public llvm::FoldingSetNode {
 public:
-  static const llvm::sys::Path CPUsRoot;
+  static const llvm::Twine CPUsRoot;
 
 public:
   static bool classof(const HardwareComponent *Comp) {
