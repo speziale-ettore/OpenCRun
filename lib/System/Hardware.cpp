@@ -190,7 +190,7 @@ public:
 private:
   HardwareCPU *ParseCPU(const llvm::sys::Path &CPUPath);
   void ParseCaches(const llvm::sys::Path &CPUPath);
-  void ParseNode(const llvm::sys::Path &CPUPath);
+  void ParseNode(HardwareCPU &CPU, const llvm::sys::Path &CPUPath);
 
 private:
   Hardware::CPUComponents &CPUs;
@@ -243,23 +243,19 @@ private:
 
 class NUMAVisitor : public SimpleParser {
 protected:
-  NUMAVisitor(Hardware::CPUComponents &CPUs,
-              Hardware::CacheComponents &Caches,
-              Hardware::NodeComponents &Nodes) : CPUs(CPUs),
-                                                 Caches(Caches),
+  NUMAVisitor(HardwareCPU &CPU,
+              Hardware::NodeComponents &Nodes) : CPU(CPU),
                                                  Nodes(Nodes) { }
 protected:
-  Hardware::CPUComponents &CPUs;
-  Hardware::CacheComponents &Caches;
+  HardwareCPU &CPU;
   Hardware::NodeComponents &Nodes;
 };
 
 class NUMAAwareVisitor : public NUMAVisitor {
 public:
-  NUMAAwareVisitor(Hardware::CPUComponents &CPUs,
-                   Hardware::CacheComponents &Caches,
+  NUMAAwareVisitor(HardwareCPU &CPU,
                    Hardware::NodeComponents &Nodes)
-    : NUMAVisitor(CPUs, Caches, Nodes) { }
+    : NUMAVisitor(CPU, Nodes) { }
 
 public:
   void operator()(const llvm::sys::Path &NodePath);
@@ -267,10 +263,9 @@ public:
 
 class NUMANotAwareVisitor : public NUMAVisitor {
 public:
-  NUMANotAwareVisitor(Hardware::CPUComponents &CPUs,
-                      Hardware::CacheComponents &Caches,
+  NUMANotAwareVisitor(HardwareCPU &CPU,
                       Hardware::NodeComponents &Nodes)
-   : NUMAVisitor(CPUs, Caches, Nodes) { }
+   : NUMAVisitor(CPU, Nodes) { }
 
 public:
   void operator()(const llvm::sys::Path &NodePath);
@@ -289,7 +284,7 @@ HardwareCPU *CPUVisitor::operator()(const llvm::sys::Path &CPUPath) {
     return NULL;
 
   ParseCaches(CPUPath);
-  ParseNode(CPUPath);
+  ParseNode(*CPU, CPUPath);
 
   return CPU;
 }
@@ -358,7 +353,7 @@ void CPUVisitor::ParseCaches(const llvm::sys::Path &CPUPath) {
                 CacheVisitor(CPUs, Caches, Nodes));
 }
 
-void CPUVisitor::ParseNode(const llvm::sys::Path &CPUPath) {
+void CPUVisitor::ParseNode(HardwareCPU &CPU, const llvm::sys::Path &CPUPath) {
   std::set<llvm::sys::Path> Paths;
 
   if(CPUPath.getDirectoryContents(Paths, NULL))
@@ -371,11 +366,11 @@ void CPUVisitor::ParseNode(const llvm::sys::Path &CPUPath) {
 
   // The kernel exports nodes about NUMA nodes.
   if(J != E)
-    NUMAAwareVisitor(CPUs, Caches, Nodes)(*J);
+    NUMAAwareVisitor(CPU, Nodes)(*J);
 
   // Old kernels, use the old way.
   else
-    NUMANotAwareVisitor(CPUs, Caches, Nodes)(llvm::sys::Path("/proc"));
+    NUMANotAwareVisitor(CPU, Nodes)(llvm::sys::Path("/proc"));
 }
 
 //
@@ -542,42 +537,37 @@ void NUMANotAwareVisitor::operator()(const llvm::sys::Path &NodePath) {
   // Only the "0" node.
   ID.AddInteger(0);
   HardwareNode *Node = Nodes.FindNodeOrInsertPos(ID, InsertPoint);
-  if(Node)
-    return;
 
-  // Invalid path.
-  if(!NodePath.isDirectory())
-    return;
+  // Node not yet built.
+  if(!Node) {
+    // Invalid path.
+    if(!NodePath.isDirectory())
+      return;
 
-  // We expect to find /proc/meminfo.
-  llvm::sys::Path MemInfoPath(NodePath);
-  if(!MemInfoPath.appendComponent("meminfo"))
-    return;
+    // We expect to find /proc/meminfo.
+    llvm::sys::Path MemInfoPath(NodePath);
+    if(!MemInfoPath.appendComponent("meminfo"))
+      return;
 
-  // Read it.
-  KeyValueContainer Values;
-  if(!ParseKeyValue(MemInfoPath, Values))
-    return;
+    // Read it.
+    KeyValueContainer Values;
+    if(!ParseKeyValue(MemInfoPath, Values))
+      return;
 
-  // Find total installed memory size.
-  size_t Size;
-  if(!ParseSize(Values["MemTotal"], Size))
-    return;
+    // Find total installed memory size.
+    size_t Size;
+    if(!ParseSize(Values["MemTotal"], Size))
+      return;
 
-  // Register the node.
-  Node = new HardwareNode(0, Size);
-  Nodes.InsertNode(Node, InsertPoint);
-
-  // Setup links.
-  for(Hardware::CPUComponents::iterator I = CPUs.begin(),
-                                        E = CPUs.end();
-                                        I != E;
-                                        ++I) {
-    HardwareComponent *LLMem = I->GetLastLevelMemory();
-
-    Node->AddLink(LLMem);
-    LLMem->AddLink(Node);
+    // Register the node.
+    Node = new HardwareNode(0, Size);
+    Nodes.InsertNode(Node, InsertPoint);
   }
+
+  // Setup links with LLC.
+  HardwareComponent *LLMem = CPU.GetLastLevelMemory();
+  Node->AddLink(LLMem);
+  LLMem->AddLink(Node);
 }
 
 } // End anonymous namespace.
