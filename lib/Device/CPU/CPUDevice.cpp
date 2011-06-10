@@ -336,7 +336,7 @@ bool CPUDevice::BlockParallelSubmit(EnqueueNDRangeKernel &Cmd,
 
   // Decide the work group size.
   // TODO: map to L1 size.
-  bool WorkGroups;
+  unsigned WorkGroups;
   if(Cmd.IsLocalWorkGroupSizeSpecified())
     WorkGroups = Cmd.GetWorkGroupsCount();
   else
