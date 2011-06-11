@@ -7,6 +7,17 @@ using namespace opencrun;
 // DimensionInfo::DimensionInfoIterator implementation.
 //
 
+size_t DimensionInfo::DimensionInfoIterator::GetWorkGroup() const {
+  const IndexesContainer &WorkGroups = Indexes.second;
+
+  size_t WorkGroup = WorkGroups.back();
+
+  for(unsigned I = 0, E = WorkGroups.size() - 1; I != E; ++I)
+    WorkGroup += DimInfo.GetLocalWorkItems(I) * WorkGroups[I];
+
+  return WorkGroup;
+}
+
 void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {
   IndexesContainer &Locals = Indexes.first;
 
@@ -25,7 +36,7 @@ void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {
         I = 0;
     }
 
-    size_t WorkGroupSize = DimInfo.GetWorkGroupSize(I);
+    size_t WorkGroupSize = DimInfo.GetLocalWorkItems(I);
 
     size_t NewId = Locals[I] + N;
     Carry = NewId / WorkGroupSize - Locals[I] / WorkGroupSize;

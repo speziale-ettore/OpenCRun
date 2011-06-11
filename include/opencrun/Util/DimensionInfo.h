@@ -93,8 +93,15 @@ public:
       DimensionInfoIterator That = *this; ++*this; return That;
     }
 
+    DimensionInfoIterator &operator+=(int N) {
+      Advance(N); return *this;
+    }
+
     IndexesPair &operator*() { return Indexes; }
     IndexesPair *operator->() { return &Indexes; }
+
+  public:
+    size_t GetWorkGroup() const;
 
   private:
     void Advance(unsigned N);
@@ -141,13 +148,6 @@ public:
 public:
   unsigned GetDimensions() const { return Info.size(); }
 
-  size_t GetWorkGroupSize(unsigned I) const {
-    if(I >= Info.size())
-      return 0;
-
-    return Info[I].GetLocalSize();
-  }
-
   unsigned GetWorkGroupsCount() const {
     return GetGlobalWorkItems() / GetLocalWorkItems();
   }
@@ -187,6 +187,13 @@ public:
     return Info[I].GetGlobalSize();
   }
 
+  unsigned GetLocalWorkItems(unsigned I) const {
+    if(I >= Info.size())
+      return 0;
+
+    return Info[I].GetLocalSize();
+  }
+
   unsigned GetLocalWorkItems() const {
     InfoContainer::const_iterator I = Info.begin(), E = Info.end();
 
@@ -200,7 +207,7 @@ public:
     return Size;
   }
 
-  bool SetWorkGroupsSize(llvm::SmallVector<size_t, 4> Sizes) {
+  bool SetLocalWorkItems(llvm::SmallVector<size_t, 4> Sizes) {
     if(Sizes.size() != Info.size())
       return false;
 

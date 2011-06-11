@@ -8,11 +8,15 @@ using namespace opencrun::cpu;
 NDRangeKernelBlockCPUCommand::NDRangeKernelBlockCPUCommand(
                                 EnqueueNDRangeKernel &Cmd,
                                 Signature Entry,
-                                unsigned WorkGroup,
                                 ArgsMappings &GlobalArgs,
+                                DimensionInfo::iterator Index,
                                 CPUCommand::ResultRecorder &Result) :
-  CPUMultiExecCommand(CPUCommand::NDRangeKernelBlock, Cmd, Result, WorkGroup),
-  Entry(Entry) {
+  CPUMultiExecCommand(CPUCommand::NDRangeKernelBlock,
+                      Cmd,
+                      Result,
+                      Index.GetWorkGroup()),
+  Entry(Entry),
+  Index(Index) {
   Kernel &Kern = GetKernel();
 
   Args = static_cast<void **>(sys::CAlloc(Kern.GetArgCount(), sizeof(void *)));

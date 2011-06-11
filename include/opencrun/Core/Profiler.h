@@ -151,6 +151,8 @@ private:
   llvm::raw_ostream &DumpCommandName(Command &Cmd);
 
 private:
+  llvm::sys::Mutex ThisLock;
+
   llvm::raw_fd_ostream ProfileStream;
   unsigned ToProfile;
 };

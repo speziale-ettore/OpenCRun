@@ -34,6 +34,8 @@ Profiler::Profiler() : ProfileStream(STDERR_FILENO, false, true),
 void Profiler::DumpTrace(Command &Cmd,
                          const ProfileTrace &Trace,
                          bool Force) {
+  llvm::sys::ScopedLock Lock(ThisLock);
+
   if(!IsProfilingForcedFromEnvironment() && !Force)
     return;
 

@@ -4,6 +4,8 @@
 #include "opencrun/Core/Event.h"
 #include "opencrun/System/OS.h"
 
+#include "llvm/Support/ThreadLocal.h"
+
 #include <float.h>
 
 using namespace opencrun;
@@ -193,7 +195,9 @@ int CPUThread::Execute(NDRangeKernelBlockCPUCommand &Cmd) {
   NDRangeKernelBlockCPUCommand::Signature Func = Cmd.GetFunction();
   void **Args = Cmd.GetArgumentsPointer();
 
+  Index = &Cmd.GetIndex();
   Func(Args);
+  Index = NULL;
 
   return CPUCommand::NoError;
 }
@@ -287,6 +291,23 @@ CPUThread &Multiprocessor::GetLesserLoadedThread() {
       Thr = *I;
 
   return *Thr;
+}
+
+//
+// GetCurrentThread implementaion.
+//
+
+namespace {
+
+llvm::sys::ThreadLocal<const CPUThread> CurThread;
+
+void SetCurrentThread(CPUThread &Thr) { CurThread.set(&Thr); }
+void ResetCurrentThread() { CurThread.erase(); }
+
+} // End anonymous namespace.
+
+CPUThread &opencrun::cpu::GetCurrentThread() {
+  return *const_cast<CPUThread *>(CurThread.get());
 }
 
 //

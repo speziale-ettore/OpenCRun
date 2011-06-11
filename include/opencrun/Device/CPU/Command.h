@@ -345,8 +345,8 @@ public:
 public:
   NDRangeKernelBlockCPUCommand(EnqueueNDRangeKernel &Cmd,
                                Signature Entry,
-                               unsigned WorkGroup,
                                ArgsMappings &GlobalArgs,
+                               DimensionInfo::iterator Index,
                                CPUCommand::ResultRecorder &Result);
 
   ~NDRangeKernelBlockCPUCommand();
@@ -354,6 +354,7 @@ public:
 public:
   Signature &GetFunction() { return Entry; }
   void **GetArgumentsPointer() { return Args; }
+  DimensionInfo::iterator &GetIndex() { return Index; }
 
   Kernel &GetKernel() {
     return GetQueueCommandAs<EnqueueNDRangeKernel>().GetKernel();
@@ -366,6 +367,7 @@ public:
 private:
   Signature Entry;
   void **Args;
+  DimensionInfo::iterator Index;
 };
 
 class NativeKernelCPUCommand : public CPUExecCommand {

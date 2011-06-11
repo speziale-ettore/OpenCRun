@@ -81,6 +81,8 @@ private:
   volatile WorkingMode Mode;
   CPUCommands Commands;
   Multiprocessor &MP;
+
+  DimensionInfo::iterator *Index;
 };
 
 class Multiprocessor {
@@ -118,6 +120,8 @@ private:
 
   friend class ProfilerTraits<Multiprocessor>;
 };
+
+CPUThread &GetCurrentThread();
 
 } // End namespace cpu.
 } // End namespace opencrun.

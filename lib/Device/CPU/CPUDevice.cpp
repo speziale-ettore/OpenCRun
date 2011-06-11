@@ -334,37 +334,40 @@ bool CPUDevice::BlockParallelSubmit(EnqueueNDRangeKernel &Cmd,
   // Native launcher address.
   BlockParallelEntryPoint Entry = GetBlockParallelEntryPoint(Cmd.GetKernel());
 
+  // Index space.
+  DimensionInfo &DimInfo = Cmd.GetDimensionInfo();
+
   // Decide the work group size.
   // TODO: map to L1 size.
   if(!Cmd.IsLocalWorkGroupSizeSpecified()) {
-    DimensionInfo &DimInfo = Cmd.GetDimensionInfo();
     llvm::SmallVector<size_t, 4> Sizes;
 
     for(unsigned I = 0; I < DimInfo.GetDimensions(); ++I)
       Sizes.push_back(DimInfo.GetGlobalWorkItems(I));
 
-    DimInfo.SetWorkGroupsSize(Sizes);
+    DimInfo.SetLocalWorkItems(Sizes);
   }
-
-  // TODO: refactor.
-  unsigned WorkGroups = Cmd.GetWorkGroupsCount();
 
   // Holds data about kernel result.
   llvm::IntrusiveRefCntPtr<CPUCommand::ResultRecorder> Result;
-  Result = new CPUCommand::ResultRecorder(WorkGroups);
+  Result = new CPUCommand::ResultRecorder(Cmd.GetWorkGroupsCount());
 
   MultiprocessorsContainer::iterator S = Multiprocessors.begin(),
                                      F = Multiprocessors.end(),
                                      J = S;
+  size_t WorkGroupSize = DimInfo.GetLocalWorkItems();
   bool AllSent = true;
 
   // Perfect load balancing.
-  for(unsigned I = 0, E = WorkGroups; I != E; ++I) {
+  for(DimensionInfo::iterator I = DimInfo.begin(),
+                              E = DimInfo.end();
+                              I != E;
+                              I += WorkGroupSize) {
     NDRangeKernelBlockCPUCommand *NDRangeCmd;
     NDRangeCmd = new NDRangeKernelBlockCPUCommand(Cmd,
                                                   Entry,
-                                                  I,
                                                   GlobalArgs,
+                                                  I,
                                                   *Result);
 
     // Submit command.
