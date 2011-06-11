@@ -336,11 +336,18 @@ bool CPUDevice::BlockParallelSubmit(EnqueueNDRangeKernel &Cmd,
 
   // Decide the work group size.
   // TODO: map to L1 size.
-  unsigned WorkGroups;
-  if(Cmd.IsLocalWorkGroupSizeSpecified())
-    WorkGroups = Cmd.GetWorkGroupsCount();
-  else
-    WorkGroups = 1;
+  if(!Cmd.IsLocalWorkGroupSizeSpecified()) {
+    DimensionInfo &DimInfo = Cmd.GetDimensionInfo();
+    llvm::SmallVector<size_t, 4> Sizes;
+
+    for(unsigned I = 0; I < DimInfo.GetDimensions(); ++I)
+      Sizes.push_back(DimInfo.GetGlobalWorkItems(I));
+
+    DimInfo.SetWorkGroupsSize(Sizes);
+  }
+
+  // TODO: refactor.
+  unsigned WorkGroups = Cmd.GetWorkGroupsCount();
 
   // Holds data about kernel result.
   llvm::IntrusiveRefCntPtr<CPUCommand::ResultRecorder> Result;

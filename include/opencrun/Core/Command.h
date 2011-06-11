@@ -144,6 +144,7 @@ private:
 
 public:
   Kernel &GetKernel() { return *Kern; }
+  DimensionInfo &GetDimensionInfo() { return DimInfo; }
 
   unsigned GetWorkGroupsCount() const { return DimInfo.GetWorkGroupsCount(); }
 

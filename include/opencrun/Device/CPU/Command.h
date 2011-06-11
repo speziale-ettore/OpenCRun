@@ -359,6 +359,10 @@ public:
     return GetQueueCommandAs<EnqueueNDRangeKernel>().GetKernel();
   }
 
+  DimensionInfo &GetDimensionInfo() {
+    return GetQueueCommandAs<EnqueueNDRangeKernel>().GetDimensionInfo();
+  }
+
 private:
   Signature Entry;
   void **Args;
