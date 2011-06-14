@@ -80,6 +80,7 @@ public:
 private:
   void InitDeviceInfo(sys::HardwareNode &Node);
   void InitJIT();
+  void InitInternalCalls();
   void InitMultiprocessors(sys::HardwareNode &Node);
 
   void DestroyJIT();
@@ -112,6 +113,7 @@ private:
   Memory Global;
 
   llvm::OwningPtr<llvm::ExecutionEngine> JIT;
+  llvm::StringMap<void *> InternalCalls;
 
   BlockParallelEntryPoints BlockParallelEntriesCache;
 

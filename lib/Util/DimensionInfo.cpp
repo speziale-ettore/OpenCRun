@@ -18,6 +18,18 @@ size_t DimensionInfo::DimensionInfoIterator::GetWorkGroup() const {
   return WorkGroup;
 }
 
+size_t DimensionInfo::DimensionInfoIterator::GetWorkGroup(unsigned I) const {
+  const IndexesContainer &WorkGroups = Indexes.second;
+
+  return WorkGroups[I];
+}
+
+size_t DimensionInfo::DimensionInfoIterator::GetGlobalId(unsigned I) const {
+  const IndexesContainer &Locals = Indexes.first;
+
+  return GetWorkGroup(I) * DimInfo.GetLocalWorkItems(I) + Locals[I];
+}
+
 void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {
   IndexesContainer &Locals = Indexes.first;
 

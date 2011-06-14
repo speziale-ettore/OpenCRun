@@ -1,5 +1,6 @@
 
 #include "opencrun/Device/CPU/CPUDevice.h"
+#include "opencrun/Device/CPULib/InternalCall.h"
 #include "opencrun/Core/Event.h"
 #include "opencrun/Device/CPUPasses/AllPasses.h"
 #include "opencrun/System/OS.h"
@@ -92,6 +93,7 @@ CPUDevice::CPUDevice(sys::HardwareNode &Node) :
   InitDeviceInfo(Node);
   InitMultiprocessors(Node);
   InitJIT();
+  InitInternalCalls();
 }
 
 CPUDevice::~CPUDevice() {
@@ -280,6 +282,16 @@ void CPUDevice::InitJIT() {
   JIT.reset(Engine);
 }
 
+void CPUDevice::InitInternalCalls() {
+  intptr_t Addr;
+
+  #define INTERNAL_CALL(N, F)                           \
+    Addr = reinterpret_cast<intptr_t>(F);               \
+    InternalCalls[#N] = reinterpret_cast<void *>(Addr);
+  #include "InternalCalls.def"
+  #undef INTERNAL_CALL
+}
+
 void CPUDevice::InitMultiprocessors(sys::HardwareNode &Node) {
   for(sys::HardwareNode::const_llc_iterator I = Node.llc_begin(),
                                             E = Node.llc_end();
@@ -427,11 +439,17 @@ CPUDevice::GetBlockParallelEntryPoint(Kernel &Kern) {
 }
 
 void *CPUDevice::LinkLibFunction(const std::string &Name) {
-  llvm::Function *Func = JIT->FindFunctionNamed(Name.c_str());
-  if(!Func)
-    return NULL;
+  const char *StrName = Name.c_str();
 
-  return JIT->getPointerToFunction(Func);
+  // Internal call.
+  if(InternalCalls.count(StrName))
+    return InternalCalls[StrName];
+
+  // Bit-code function.
+  if(llvm::Function *Func = JIT->FindFunctionNamed(StrName))
+    return JIT->getPointerToFunction(Func);
+
+  return NULL;
 }
 
 void CPUDevice::LocateMemoryObjArgAddresses(

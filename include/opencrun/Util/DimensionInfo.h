@@ -102,6 +102,9 @@ public:
 
   public:
     size_t GetWorkGroup() const;
+    size_t GetWorkGroup(unsigned I) const;
+
+    size_t GetGlobalId(unsigned I) const;
 
   private:
     void Advance(unsigned N);

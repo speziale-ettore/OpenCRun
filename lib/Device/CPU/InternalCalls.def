@@ -1,0 +1,2 @@
+
+INTERNAL_CALL(get_global_id, opencrun::cpu::GetGlobalId)

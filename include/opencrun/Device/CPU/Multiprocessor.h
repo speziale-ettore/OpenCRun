@@ -33,13 +33,7 @@ public:
   };
 
 public:
-  CPUThread(Multiprocessor &MP,
-            const sys::HardwareCPU &CPU) : Thread(CPU),
-                                           Mode(FullyOperational),
-                                           MP(MP) {
-    Start();
-  }
-
+  CPUThread(Multiprocessor &MP, const sys::HardwareCPU &CPU);
   virtual ~CPUThread();
 
 public:
@@ -49,6 +43,8 @@ public:
 
 public:
   float GetLoadIndicator();
+
+  size_t GetGlobalId(unsigned I) { return Index->GetGlobalId(I); }
 
 private:
   bool Submit(CPUServiceCommand *Cmd);

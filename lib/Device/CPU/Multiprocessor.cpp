@@ -11,9 +11,23 @@
 using namespace opencrun;
 using namespace opencrun::cpu;
 
+namespace {
+
+void SetCurrentThread(CPUThread &Thr);
+void ResetCurrentThread();
+
+} // End anonymous namespace.
+
 //
 // CPUThread implementation.
 //
+
+CPUThread::CPUThread(Multiprocessor &MP,
+                     const sys::HardwareCPU &CPU) : Thread(CPU),
+                                                    Mode(FullyOperational),
+                                                    MP(MP) {
+  Start();
+}
 
 CPUThread::~CPUThread() {
   // Send a command to stop the device thread. Do not employ sys:FastRendevouz
@@ -50,6 +64,8 @@ bool CPUThread::Submit(CPUCommand *Cmd) {
 }
 
 void CPUThread::Run() {
+  SetCurrentThread(*this);
+
   while(Mode & ExecJobs) {
     ThisMnt.Enter();
 
@@ -63,6 +79,8 @@ void CPUThread::Run() {
 
     Execute(Cmd);
   }
+
+  ResetCurrentThread();
 }
 
 float CPUThread::GetLoadIndicator() {

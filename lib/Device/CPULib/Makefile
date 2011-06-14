@@ -6,9 +6,9 @@
 LEVEL = ../../..
 
 #
-# Give the name of a library.
+# List all of the subdirectories that we will compile.
 #
-MODULE_NAME = opencrunCPULib
+DIRS = BitCode InternalCall
 
 #
 # Include Makefile.common so we know what to do.
