@@ -113,7 +113,6 @@ private:
   Memory Global;
 
   llvm::OwningPtr<llvm::ExecutionEngine> JIT;
-  llvm::StringMap<void *> InternalCalls;
 
   BlockParallelEntryPoints BlockParallelEntriesCache;
 

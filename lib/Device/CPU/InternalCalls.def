@@ -1,2 +1,6 @@
 
+// Work-Item Functions.
 INTERNAL_CALL(get_global_id, opencrun::cpu::GetGlobalId)
+
+// Synchronization Functions.
+INTERNAL_CALL(barrier, opencrun::cpu::Barrier)

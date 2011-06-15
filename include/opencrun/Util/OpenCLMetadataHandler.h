@@ -25,12 +25,17 @@
 //                    values comes frome clang::LangAS::opencl_*. Invalid
 //                    address space is clang::LangA::Last.
 //
+// The OpenCLMetadataHandler class has been further extended to provide
+// additional information about an OpenCL kernels, like type mappings.
+//
 //===----------------------------------------------------------------------===//
 
 #ifndef OPENCRUN_UTIL_OPENCLMETADATAHANDLER_H
 #define OPENCRUN_UTIL_OPENCLMETADATAHANDLER_H
 
 #include "clang/Basic/AddressSpaces.h"
+#include "llvm/ADT/StringMap.h"
+#include "llvm/DerivedTypes.h"
 #include "llvm/Module.h"
 
 namespace opencrun {
@@ -114,7 +119,7 @@ public:
   }
 
 public:
-  OpenCLMetadataHandler(const llvm::Module &Mod) : Mod(Mod) { }
+  OpenCLMetadataHandler(llvm::Module &Mod);
   OpenCLMetadataHandler(const OpenCLMetadataHandler &That); // Do not implement.
   void operator=(const OpenCLMetadataHandler &That); // Do not implement.
 
@@ -122,8 +127,18 @@ public:
   llvm::Function *GetKernel(llvm::StringRef KernName) const;
   clang::LangAS::ID GetArgAddressSpace(llvm::Function &Kern, unsigned I);
 
+  llvm::Function *GetBuiltin(llvm::StringRef Name);
+
 private:
-  const llvm::Module &Mod;
+  bool HasRightSignature(const llvm::Function *Func,
+                         const llvm::StringRef Signature) const;
+  llvm::Function *BuildBuiltin(const llvm::StringRef Name,
+                               const llvm::StringRef Signature);
+
+private:
+  llvm::Module &Mod;
+
+  llvm::StringMap<const char *> Builtins;
 };
 
 } // End namespace opencrun.

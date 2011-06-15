@@ -55,6 +55,7 @@ private:
 
 private:
   std::string Kernel;
+  llvm::Function *Barrier;
 };
 
 } // End anonymous namespace.
@@ -64,6 +65,8 @@ bool GroupParallelStub::runOnModule(llvm::Module &Mod) {
 
   llvm::Function *KernelFun;
   bool Modified = false;
+
+  Barrier = MDHandler.GetBuiltin("barrier");
 
   if(Kernel != "" && (KernelFun = MDHandler.GetKernel(Kernel)))
     Modified = BuildStub(*KernelFun);
@@ -131,12 +134,16 @@ bool GroupParallelStub::BuildStub(llvm::Function &Kern) {
   }
 
   // Call the kernel.
-  llvm::CallInst *Call = llvm::CallInst::Create(&Kern,
-                                                KernArgs.begin(),
-                                                KernArgs.end(),
-                                                "",
-                                                Entry);
-  Call->setTailCall();
+  llvm::CallInst::Create(&Kern, KernArgs.begin(), KernArgs.end(), "", Entry);
+
+  // Call the implicit barrier.
+  llvm::Value *Flag = llvm::ConstantInt::get(llvm::Type::getInt64Ty(Ctx), 0);
+  llvm::CallInst *BarrierCall;
+  BarrierCall = llvm::CallInst::Create(Barrier,
+                                       Flag,
+                                       "",
+                                       Entry);
+  BarrierCall->setTailCall();
 
   // End stub.
   llvm::ReturnInst::Create(Ctx, Entry);

@@ -1,6 +1,6 @@
 
 #include "opencrun/Device/CPU/CPUDevice.h"
-#include "opencrun/Device/CPULib/InternalCall.h"
+#include "opencrun/Device/CPU/InternalCalls.h"
 #include "opencrun/Core/Event.h"
 #include "opencrun/Device/CPUPasses/AllPasses.h"
 #include "opencrun/System/OS.h"
@@ -283,11 +283,18 @@ void CPUDevice::InitJIT() {
 }
 
 void CPUDevice::InitInternalCalls() {
-  intptr_t Addr;
+  opencrun::OpenCLMetadataHandler MDHandler(*BitCodeLibrary);
 
-  #define INTERNAL_CALL(N, F)                           \
-    Addr = reinterpret_cast<intptr_t>(F);               \
-    InternalCalls[#N] = reinterpret_cast<void *>(Addr);
+  intptr_t AddrInt;
+  void *Addr;
+
+  llvm::Function *Func;
+
+  #define INTERNAL_CALL(N, F)                 \
+    AddrInt = reinterpret_cast<intptr_t>(F);  \
+    Addr = reinterpret_cast<void *>(AddrInt); \
+    Func = MDHandler.GetBuiltin(#N);          \
+    JIT->addGlobalMapping(Func, Addr);
   #include "InternalCalls.def"
   #undef INTERNAL_CALL
 }
@@ -439,14 +446,8 @@ CPUDevice::GetBlockParallelEntryPoint(Kernel &Kern) {
 }
 
 void *CPUDevice::LinkLibFunction(const std::string &Name) {
-  const char *StrName = Name.c_str();
-
-  // Internal call.
-  if(InternalCalls.count(StrName))
-    return InternalCalls[StrName];
-
   // Bit-code function.
-  if(llvm::Function *Func = JIT->FindFunctionNamed(StrName))
+  if(llvm::Function *Func = JIT->FindFunctionNamed(Name.c_str()))
     return JIT->getPointerToFunction(Func);
 
   return NULL;

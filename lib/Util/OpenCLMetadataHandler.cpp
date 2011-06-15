@@ -1,9 +1,147 @@
 
 #include "opencrun/Util/OpenCLMetadataHandler.h"
 
+#include "clang/Basic/Diagnostic.h"
+#include "clang/Basic/TargetInfo.h"
+#include "clang/Basic/TargetOptions.h"
 #include "llvm/Constants.h"
+#include "llvm/Support/ErrorHandling.h"
 
 using namespace opencrun;
+
+//
+// ParserState implementation.
+//
+
+namespace {
+
+class SignatureBuilder {
+public:
+  typedef llvm::SmallVector<const llvm::Type *, 4> TypesContainer;
+
+public:
+  SignatureBuilder(const llvm::StringRef Name,
+                   llvm::Module &Mod) : Name(Name),
+                                        Mod(Mod) {
+    ResetState();
+    InitTargetInfo();
+  }
+
+public:
+  void SetUnsignedPrefix() { Unsigned = true; }
+  void SetLongPrefix() { Long = true; }
+
+  void SetInteger() { Integer = true; }
+  void SetSizeT() { SizeT = true; }
+  void SetVoid() { Void = true; }
+
+  void SetTypeDone() {
+    const llvm::Type *Ty;
+
+    if(Integer && Unsigned && !Long)
+      Ty = GetUIntTy();
+    else if(Integer && Unsigned && Long)
+      Ty = GetULongTy();
+    else if(SizeT)
+      Ty = GetSizeTTy();
+    else if(Void)
+      Ty = GetVoidTy();
+    else
+      llvm_unreachable("Type not specified");
+
+    Types.push_back(Ty);
+
+    ResetState();
+  }
+
+  llvm::Function *CreateFunction() {
+    if(Types.size() < 1)
+      llvm_unreachable("Not enough arguments");
+
+    const llvm::Type *RetTy = Types.front();
+    Types.erase(Types.begin());
+
+    llvm::FunctionType *FunTy = llvm::FunctionType::get(RetTy, Types, false);
+
+    llvm::Function *Fun;
+    Fun = llvm::Function::Create(FunTy,
+                                 llvm::Function::ExternalLinkage,
+                                 Name,
+                                 &Mod);
+
+    return Fun;
+  }
+
+private:
+  void ResetState() {
+    Unsigned = Long = false;
+    Integer = SizeT = Void = false;
+  }
+  
+  void InitTargetInfo() {
+    clang::TargetOptions TargetOpts;
+    TargetOpts.Triple = Mod.getTargetTriple();
+
+    llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs;
+    DiagIDs = new clang::DiagnosticIDs();
+
+    clang::DiagnosticClient *DiagClient = new clang::DiagnosticClient();
+    clang::Diagnostic *Diag = new clang::Diagnostic(DiagIDs, DiagClient);
+
+    TargetInfo.reset(clang::TargetInfo::CreateTargetInfo(*Diag, TargetOpts));
+
+    delete Diag;
+  }
+
+  const llvm::Type *GetUIntTy() {
+    return GetIntTy(clang::TargetInfo::UnsignedInt);
+  }
+
+  const llvm::Type *GetULongTy() {
+    return GetIntTy(clang::TargetInfo::UnsignedLong);
+  }
+
+  const llvm::Type *GetSizeTTy() {
+    return GetIntTy(TargetInfo->getSizeType());
+  }
+
+  const llvm::Type *GetIntTy(clang::TargetInfo::IntType Ty) {
+    unsigned Width = TargetInfo->getTypeWidth(Ty);
+
+    return llvm::Type::getIntNTy(Mod.getContext(), Width);
+  }
+
+  const llvm::Type *GetVoidTy() {
+    return llvm::Type::getVoidTy(Mod.getContext());
+  }
+
+private:
+  const llvm::StringRef Name;
+  llvm::Module &Mod;
+
+  // Prefixes.
+  bool Unsigned, Long;
+
+  // Types.
+  bool Integer, SizeT, Void;
+
+  TypesContainer Types;
+
+  llvm::OwningPtr<clang::TargetInfo> TargetInfo;
+};
+
+} // End anonymous namespace.
+
+//
+// OpenCLMetadataHandler implementation.
+//
+
+OpenCLMetadataHandler::OpenCLMetadataHandler(llvm::Module &Mod) : Mod(Mod) {
+  #define BUILTIN(N, S) \
+    Builtins[N] = S;
+  #include "opencrun/Util/Builtins.def"
+  #undef BUILTIN
+}
 
 llvm::Function *
 OpenCLMetadataHandler::GetKernel(llvm::StringRef KernName) const {
@@ -61,4 +199,86 @@ OpenCLMetadataHandler::GetArgAddressSpace(llvm::Function &Kern, unsigned I) {
     return static_cast<clang::LangAS::ID>(AddrSpace->getZExtValue());
   else
     return clang::LangAS::Last;
+}
+
+llvm::Function *OpenCLMetadataHandler::GetBuiltin(llvm::StringRef Name) {
+  // Function is not a built-in.
+  if(!Builtins.count(Name)) {
+    std::string ErrMsg = "Unknown builtin: ";
+    ErrMsg += Name;
+
+    llvm_unreachable(ErrMsg.c_str());
+  }
+
+  llvm::Function *Func = Mod.getFunction(Name);
+
+  // Built-in declaration found inside the module.
+  if(Func) {
+    if(!HasRightSignature(Func, Builtins[Name])) {
+      std::string ErrMsg = "Malformed builtin declaration: ";
+      ErrMsg += Name;
+
+      llvm_unreachable(ErrMsg.c_str());
+    }
+  }
+
+  // Built-in not found in the module, create it.
+  else
+    Func = BuildBuiltin(Name, Builtins[Name]);
+
+  return Func;
+}
+
+bool OpenCLMetadataHandler::HasRightSignature(
+                              const llvm::Function *Func,
+                              const llvm::StringRef Signature) const {
+  llvm_unreachable("Not yet implemented");
+}
+
+llvm::Function *
+OpenCLMetadataHandler::BuildBuiltin(const llvm::StringRef Name,
+                                    const llvm::StringRef Signature) {
+  llvm::StringRef::iterator I = Signature.begin(), E = Signature.end();
+
+  SignatureBuilder Bld(Name, Mod);
+
+  while(I != E) {
+    // Scan prefix.
+
+    if(*I == 'U') {
+      I++;
+      Bld.SetUnsignedPrefix();
+    }
+
+    if(*I == 'L') {
+      I++;
+      Bld.SetLongPrefix();
+    }
+
+    // Scan type.
+
+    switch(*I++) {
+    case 'i':
+      Bld.SetInteger();
+      break;
+
+    case 'z':
+      Bld.SetSizeT();
+      break;
+
+    case 'v':
+      Bld.SetVoid();
+      break;
+
+    default:
+      llvm_unreachable("Unknown type");
+    }
+
+    // TODO: scan suffix.
+
+    // Build type.
+    Bld.SetTypeDone();
+  }
+
+  return Bld.CreateFunction();
 }

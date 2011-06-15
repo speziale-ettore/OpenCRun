@@ -14,8 +14,7 @@ LINK_COMPONENTS = x86 jit asmparser bitreader bitwriter instrumentation \
 LLVMLIBS = clangFrontend.a clangDriver.a clangSerialization.a clangCodeGen.a \
            clangParse.a clangSema.a clangAnalysis.a clangAST.a clangLex.a \
            clangBasic.a
-USEDLIBS = opencrunCore.a opencrunDevice.a \
-           opencrunCPUDevice.a opencrunCPUInternalCall.a \
+USEDLIBS = opencrunCore.a opencrunDevice.a opencrunCPUDevice.a \
            opencrunCPUPasses.a opencrunUtil.a opencrunSystem.a
 
 include $(LEVEL)/Makefile.common

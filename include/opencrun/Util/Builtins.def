@@ -1,0 +1,13 @@
+
+// Work-item builtins.
+BUILTIN("get_work_dim", "Uiv")
+BUILTIN("get_global_size", "zUi")
+BUILTIN("get_global_id", "zUi")
+BUILTIN("get_local_size", "zUi")
+BUILTIN("get_local_id", "zUi")
+BUILTIN("get_num_groups", "zUi")
+BUILTIN("get_group_id", "zUi")
+BUILTIN("get_global_offset", "zUi")
+
+// Synchronization builtins.
+BUILTIN("barrier", "vULi")
