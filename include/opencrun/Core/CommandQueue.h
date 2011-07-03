@@ -47,12 +47,11 @@ protected:
 
 public:
   InternalEvent *Enqueue(Command &Cmd, cl_int *ErrCode = NULL);
-  void CommandDone(InternalEvent &Ev);
   void Flush();
   void Finish();
 
-protected:
   virtual bool RunScheduler() = 0;
+  virtual void CommandDone(InternalEvent &Ev);
 
 public:
   Type GetType() const { return Ty; }
@@ -92,6 +91,7 @@ private:
 
 public:
   virtual bool RunScheduler();
+  virtual void CommandDone(InternalEvent &Ev);
 };
 
 class InOrderQueue : public CommandQueue {
@@ -102,7 +102,8 @@ public:
 
 public:
   InOrderQueue(Context &Ctx, Device &Dev, bool EnableProfile) :
-    CommandQueue(CommandQueue::InOrder, Ctx, Dev, EnableProfile) { }
+    CommandQueue(CommandQueue::InOrder, Ctx, Dev, EnableProfile),
+    CommandOnFly(false) { }
   virtual ~InOrderQueue();
 
 private:
@@ -111,6 +112,10 @@ private:
 
 public:
   virtual bool RunScheduler();
+  virtual void CommandDone(InternalEvent &Ev);
+
+private:
+  bool CommandOnFly;
 };
 
 } // End namespace opencrun.

@@ -193,7 +193,7 @@ public:
 
   unsigned GetCoreID() const { return CoreID; }
 
-  HardwareComponent *GetFirstLevelMemory();
+  HardwareComponent *GetFirstLevelMemory() const ;
   HardwareComponent *GetLastLevelMemory() { return GetAncestor(); }
 
 private:

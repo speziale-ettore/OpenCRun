@@ -343,10 +343,15 @@ public:
   typedef llvm::DenseMap<unsigned, void *> ArgsMappings;
 
 public:
+  DimensionInfo::iterator index_begin() { return Start; }
+  DimensionInfo::iterator index_end() { return End; }
+
+public:
   NDRangeKernelBlockCPUCommand(EnqueueNDRangeKernel &Cmd,
                                Signature Entry,
                                ArgsMappings &GlobalArgs,
-                               DimensionInfo::iterator Index,
+                               DimensionInfo::iterator I,
+                               DimensionInfo::iterator E,
                                CPUCommand::ResultRecorder &Result);
 
   ~NDRangeKernelBlockCPUCommand();
@@ -354,7 +359,6 @@ public:
 public:
   Signature &GetFunction() { return Entry; }
   void **GetArgumentsPointer() { return Args; }
-  DimensionInfo::iterator &GetIndex() { return Index; }
 
   Kernel &GetKernel() {
     return GetQueueCommandAs<EnqueueNDRangeKernel>().GetKernel();
@@ -367,7 +371,9 @@ public:
 private:
   Signature Entry;
   void **Args;
-  DimensionInfo::iterator Index;
+
+  DimensionInfo::iterator Start;
+  DimensionInfo::iterator End;
 };
 
 class NativeKernelCPUCommand : public CPUExecCommand {

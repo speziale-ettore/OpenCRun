@@ -43,6 +43,17 @@ public:
       LocalSize(LocalSize) { }
 
   public:
+    bool operator==(const InfoWrapper &That) const {
+      return Offset == That.Offset &&
+             GlobalSize == That.GlobalSize &&
+             LocalSize == That.LocalSize;
+    }
+
+    bool operator!=(const InfoWrapper &That) const {
+      return !(*this == That);
+    }
+
+  public:
     size_t GetOffset() const { return Offset; }
     size_t GetGlobalSize() const { return GlobalSize; }
     size_t GetLocalSize() const { return LocalSize; }
@@ -71,12 +82,14 @@ public:
     DimensionInfoIterator(DimensionInfo &DimInfo,
                           IndexesContainer &Locals,
                           IndexesContainer &WorkGroups) :
-      DimInfo(DimInfo),
+      DimInfo(&DimInfo),
       Indexes(Locals, WorkGroups) { }
+
+    DimensionInfoIterator() : DimInfo(NULL) { }
 
   public:
     bool operator==(const DimensionInfoIterator &That) const {
-      return Indexes == That.Indexes;
+      return *DimInfo == *That.DimInfo && Indexes == That.Indexes;
     }
 
     bool operator!=(const DimensionInfoIterator &That) const {
@@ -97,6 +110,10 @@ public:
       Advance(N); return *this;
     }
 
+    DimensionInfoIterator operator+(int N) {
+      DimensionInfoIterator That = *this; That += N; return That;
+    }
+
     IndexesPair &operator*() { return Indexes; }
     IndexesPair *operator->() { return &Indexes; }
 
@@ -111,7 +128,7 @@ public:
     bool AdvanceToNextWorkGroupOrigin();
 
   private:
-    DimensionInfo &DimInfo;
+    DimensionInfo *DimInfo;
     IndexesPair Indexes;
   };
 
@@ -146,6 +163,15 @@ public:
       Info.push_back(InfoWrapper(GlobalWorkOffsets[I],
                                  GlobalWorkSizes[I],
                                  LocalWorkSizes[I]));
+  }
+
+public:
+  bool operator==(const DimensionInfo &That) const {
+    return Info == That.Info;
+  }
+
+  bool operator!=(const DimensionInfo &That) const {
+    return !(*this == That);
   }
 
 public:

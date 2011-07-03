@@ -13,7 +13,7 @@ size_t DimensionInfo::DimensionInfoIterator::GetWorkGroup() const {
   size_t WorkGroup = WorkGroups.back();
 
   for(unsigned I = 0, E = WorkGroups.size() - 1; I != E; ++I)
-    WorkGroup += DimInfo.GetLocalWorkItems(I) * WorkGroups[I];
+    WorkGroup += DimInfo->GetLocalWorkItems(I) * WorkGroups[I];
 
   return WorkGroup;
 }
@@ -27,7 +27,7 @@ size_t DimensionInfo::DimensionInfoIterator::GetWorkGroup(unsigned I) const {
 size_t DimensionInfo::DimensionInfoIterator::GetGlobalId(unsigned I) const {
   const IndexesContainer &Locals = Indexes.first;
 
-  return GetWorkGroup(I) * DimInfo.GetLocalWorkItems(I) + Locals[I];
+  return GetWorkGroup(I) * DimInfo->GetLocalWorkItems(I) + Locals[I];
 }
 
 void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {
@@ -48,7 +48,7 @@ void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {
         I = 0;
     }
 
-    size_t WorkGroupSize = DimInfo.GetLocalWorkItems(I);
+    size_t WorkGroupSize = DimInfo->GetLocalWorkItems(I);
 
     size_t NewId = Locals[I] + N;
     Carry = NewId / WorkGroupSize - Locals[I] / WorkGroupSize;
@@ -72,11 +72,11 @@ bool DimensionInfo::DimensionInfoIterator::AdvanceToNextWorkGroupOrigin() {
     // No more dimensions, overflow.
     if(I == WorkGroups.size()) {
       WorkGroups.assign(WorkGroups.size(), 0);
-      WorkGroups[0] = DimInfo.GetWorkGroupsCount(0);
+      WorkGroups[0] = DimInfo->GetWorkGroupsCount(0);
       break;
     }
 
-    unsigned WorkGroupsCount = DimInfo.GetWorkGroupsCount(I);
+    unsigned WorkGroupsCount = DimInfo->GetWorkGroupsCount(I);
 
     size_t NewId = WorkGroups[I] + 1;
     Carry = NewId / WorkGroupsCount - WorkGroups[I] / WorkGroupsCount;

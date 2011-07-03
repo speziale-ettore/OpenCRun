@@ -387,6 +387,7 @@ bool CPUDevice::BlockParallelSubmit(EnqueueNDRangeKernel &Cmd,
                                                   Entry,
                                                   GlobalArgs,
                                                   I,
+                                                  I + WorkGroupSize,
                                                   *Result);
 
     // Submit command.

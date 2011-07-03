@@ -110,6 +110,8 @@ bool OutOfOrderQueue::RunScheduler() {
   return false;
 }
 
+void OutOfOrderQueue::CommandDone(InternalEvent &Ev) { }
+
 //
 // InOrderQueue implementation.
 //
@@ -121,13 +123,23 @@ InOrderQueue::~InOrderQueue() {
 bool InOrderQueue::RunScheduler() {
   llvm::sys::ScopedLock Lock(ThisLock);
 
-  if(Commands.empty())
+  if(CommandOnFly || Commands.empty())
     return false;
 
   Command &Cmd = *Commands.front();
 
-  if(Cmd.CanRun() && Dev.Submit(Cmd))
+  if(Cmd.CanRun() && Dev.Submit(Cmd)) {
     Commands.pop_front();
+    CommandOnFly = true;
+  }
 
   return Commands.size();
+}
+
+void InOrderQueue::CommandDone(InternalEvent &Ev) {
+  ThisLock.acquire();
+  CommandOnFly = false;
+  ThisLock.release();
+
+  CommandQueue::CommandDone(Ev);
 }

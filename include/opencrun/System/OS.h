@@ -14,6 +14,9 @@ void *Alloc(size_t Size);
 void *CAlloc(size_t N, size_t Size);
 void Free(void *Addr);
 
+void MarkPageReadOnly(void *Addr);
+void MarkPagesReadWrite(void *Addr, size_t Size);
+
 } // End namespace sys.
 } // End namespace opencrun.
 

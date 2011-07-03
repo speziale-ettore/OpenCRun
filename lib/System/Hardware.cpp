@@ -613,7 +613,7 @@ HardwareComponent *HardwareComponent::GetAncestor() {
 // HardwareCPU implementation.
 //
 
-HardwareComponent *HardwareCPU::GetFirstLevelMemory() {
+HardwareComponent *HardwareCPU::GetFirstLevelMemory() const {
   for(HardwareComponent::iterator I = begin(), E = end(); I != E; ++I) {
     HardwareComponent *Comp = *I;
 

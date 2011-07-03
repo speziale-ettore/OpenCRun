@@ -29,7 +29,7 @@ void GetGreeter(void *Args);
 
 const char *NDRangeHelloSrc = "kernel void NDRangeHello(global char *buf) {  "
                               "  unsigned i = get_global_id(0);              "
-                              "  buf[i] = \"Hello, From NDRange Device\"[i]; "
+                              "  buf[i] = \"NDRange\"[i];                    "
                               "}                                             ";
 
 void DebugPrinter(const char *Err,

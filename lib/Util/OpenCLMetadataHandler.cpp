@@ -77,7 +77,7 @@ private:
     Unsigned = Long = false;
     Integer = SizeT = Void = false;
   }
-  
+
   void InitTargetInfo() {
     clang::TargetOptions TargetOpts;
     TargetOpts.Triple = Mod.getTargetTriple();
@@ -232,7 +232,8 @@ llvm::Function *OpenCLMetadataHandler::GetBuiltin(llvm::StringRef Name) {
 bool OpenCLMetadataHandler::HasRightSignature(
                               const llvm::Function *Func,
                               const llvm::StringRef Signature) const {
-  llvm_unreachable("Not yet implemented");
+  // TODO: do the check. Ask Magni about name mangling.
+  return true;
 }
 
 llvm::Function *

@@ -5,4 +5,10 @@
 using namespace opencrun;
 using namespace opencrun::cpu;
 
-void opencrun::cpu::Barrier(cl_mem_fence_flags Flag) { }
+void opencrun::cpu::Barrier(cl_mem_fence_flags Flag) {
+  CPUThread &CurThread = GetCurrentThread();
+
+  CurThread.SwitchToNextWorkItem();
+
+  // TODO: handle memory fences.
+}
