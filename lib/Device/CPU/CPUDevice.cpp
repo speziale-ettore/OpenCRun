@@ -164,12 +164,23 @@ void CPUDevice::UnregisterKernel(Kernel &Kern) {
   if(I != E)
     BlockParallelEntriesCache.erase(I);
 
-  // Invoke static destructors in the device, waiting for completion.
+  // Build a command to invoke static destructors.
   RunStaticDestructorsCPUCommand::DestructorsInvoker Invoker(Mod, *JIT);
   sys::FastRendevouz Synch;
+  RunStaticDestructorsCPUCommand *Cmd;
+
+  Cmd = new RunStaticDestructorsCPUCommand(Invoker, Synch);
+
   Multiprocessor &MP = **Multiprocessors.begin();
-  MP.Submit(new RunStaticDestructorsCPUCommand(Invoker, Synch));
-  Synch.Wait();
+
+  // None available for executing the command: it is critical, run directly.
+  if(!MP.Submit(Cmd)) {
+    Invoker();
+    delete Cmd;
+
+  // Wait for other thread invoking static destructors.
+  } else
+    Synch.Wait();
 }
 
 void CPUDevice::NotifyDone(CPUExecCommand *Cmd, int ExitStatus) {
@@ -428,12 +439,23 @@ CPUDevice::GetBlockParallelEntryPoint(Kernel &Kern) {
   void *EntryPtr = JIT->getPointerToFunction(EntryFn);
   SignalJITCallEnd();
 
-  // Invoke static constructors in the device, waiting for completion.
+  // Build a command to invoke static constructors.
   RunStaticConstructorsCPUCommand::ConstructorsInvoker Invoker(Mod, *JIT);
+  RunStaticConstructorsCPUCommand *Cmd;
   sys::FastRendevouz Synch;
+
+  Cmd = new RunStaticConstructorsCPUCommand(Invoker, Synch);
+
   Multiprocessor &MP = **Multiprocessors.begin();
-  MP.Submit(new RunStaticConstructorsCPUCommand(Invoker, Synch));
-  Synch.Wait();
+
+  // None available for executing the command: it is critical, run directly.
+  if(!MP.Submit(Cmd)) {
+    Invoker();
+    delete Cmd;
+
+  // Wait for other thread invoking static constructors.
+  } else
+    Synch.Wait();
 
   // Cache it. In order to correctly cast the EntryPtr to a function pointer we
   // must pass through a uintptr_t. Otherwise, a warning is issued by the
