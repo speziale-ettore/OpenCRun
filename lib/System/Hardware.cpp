@@ -3,597 +3,400 @@
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/OwningPtr.h"
-#include "llvm/ADT/SmallString.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/Support/system_error.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/MemoryBuffer.h"
 
-#include <algorithm>
-#include <limits>
-
 using namespace opencrun::sys;
 
 namespace {
 
-class SimpleParser {
-public:
-  typedef llvm::StringMap< llvm::SmallString<8> > KeyValueContainer;
-
-protected:
-  // Parse a list of generic integers IntTy.
-  template <typename IntTy>
-  bool ParseList(llvm::StringRef File,
-                 llvm::SmallVector<IntTy, 4> &Nums,
-                 IntTy Discard = std::numeric_limits<IntTy>::max()) {
-    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
-
-    if(llvm::MemoryBuffer::getFile(File, Buf))
-      return false;
-
-    // Parse list elements
-    for(const char *I = Buf->getBufferStart(),
-                   *E = Buf->getBufferEnd(),
-                   *J = I;
-                   I != E;
-                   ++I) {
-      // Currently reading a list element.
-      if(std::isdigit(*I))
-        continue;
-
-      // Comma is the internal separator, the list is ended by '\n'.
-      if(*I != ',' && *I != '\n')
-        return false;
-
-      // Parse current number.
-      llvm::StringRef Num(J, I - J);
-      IntTy ParsedNum;
-      if(Num.getAsInteger(0, ParsedNum))
-        return false;
-
-      // Add only if not poisoned.
-      if(ParsedNum != Discard)
-        Nums.push_back(ParsedNum);
-
-      // Remember current position, for the next parse.
-      J = I + 1;
-    }
-
-    return true;
-  }
-
-  // Parse a generic integer IntTy.
-  template <typename IntTy>
-  bool ParseNumber(llvm::StringRef File, IntTy &Num) {
-    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
-    llvm::StringRef RawNum;
-
-    if(llvm::MemoryBuffer::getFile(File, Buf))
-      return false;
-
-    // Find the only number.
-    for(const char *I = Buf->getBufferStart(),
-                   *E = Buf->getBufferEnd(),
-                   *J = I;
-                   I != E;
-                   ++I) {
-      // Still parsing a number;
-      if(std::isdigit(*I))
-        continue;
-
-      // The file should contains only a number.
-      if(*I != '\n')
-        return false;
-
-      // Parse the number.
-      llvm::StringRef RawNum(J, I - J);
-      unsigned long long BufNum;
-      if(RawNum.getAsInteger(0, BufNum))
-        return false;
-      Num = BufNum;
-    }
-
-    return true;
-  }
-
-  // Parse a dimension, from a file.
-  bool ParseFileSize(llvm::StringRef File, size_t &Size) {
-    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
-
-    if(llvm::MemoryBuffer::getFile(File, Buf))
-      return false;
-
-    return ParseSize(Buf->getBuffer(), Size);
-  }
-
-  // Parse a dimension, from a String.
-  bool ParseSize(llvm::StringRef Str, size_t &Size) {
-    unsigned I, J;
-
-    Str = TrimSpaces(Str);
-
-    for(I = 0; I < Str.size() && std::isdigit(Str[I]); ++I) { }
-    llvm::StringRef RawSize = Str.substr(0, I);
-
-    for(J = I; J < Str.size() && std::isspace(Str[J]); ++J) { }
-    llvm::StringRef RawMult = Str.substr(J);
-
-    unsigned long long BufSize;
-    if(RawSize.getAsInteger(0, BufSize))
-      return false;
-
-    Size = BufSize * llvm::StringSwitch<unsigned long long>(RawMult)
-                       .Cases("K", "kB", 1024)
-                       .Default(0);
-
-    return Size != 0;
-  }
-
-  // Parse a <String,String> dictionary.
-  bool ParseKeyValue(llvm::StringRef File, KeyValueContainer &Entries) {
-    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
-
-    // Force using a 2K file size; this allows to memory mapping /proc files.
-    if(llvm::MemoryBuffer::getFile(File, Buf, 2 * 1024))
-      return false;
-
-    llvm::StringRef RawBuffer = Buf->getBuffer();
-    std::pair<llvm::StringRef, llvm::StringRef> Lines(RawBuffer.split('\n'));
-
-    // Parse file line per line.
-    for(llvm::StringRef Cur = Lines.first,
-                        Next = Lines.second;
-                        !Cur.empty();
-                        Lines = Next.split('\n'),
-                        Cur = Lines.first,
-                        Next = Lines.second) {
-      std::pair<llvm::StringRef, llvm::StringRef> Entry = Cur.split(':');
-
-      llvm::StringRef Key = TrimSpaces(Entry.first);
-      llvm::StringRef Value = TrimSpaces(Entry.second);
-
-      if(Key.empty() || Value.empty())
-        return false;
-
-      Entries[Key] = Value;
-    }
-
-    return true;
-  }
-
-  // Detect string bounds.
-  llvm::StringRef TrimSpaces(llvm::StringRef Str) {
-    unsigned I, J;
-
-    for(I = 0; I < Str.size() && std::isspace(Str[I]); ++I) { }
-    for(J = Str.size(); J > 0 && std::isspace(Str[J - 1]); --J) { }
-
-    return Str.slice(I, J);
-  }
-};
-
-class CPUVisitor : public SimpleParser {
-public:
-  CPUVisitor(Hardware::CPUComponents &CPUs,
-             Hardware::CacheComponents &Caches,
-             Hardware::NodeComponents &Nodes) : CPUs(CPUs),
-                                                Caches(Caches),
-                                                Nodes(Nodes) { }
-
-public:
-  HardwareCPU *operator()(const llvm::sys::fs::directory_entry &CPUPath);
-
-private:
-  HardwareCPU *ParseCPU(const llvm::sys::fs::directory_entry &CPUPath);
-  void ParseCaches(const llvm::sys::fs::directory_entry &CPUPath);
-  void ParseNode(HardwareCPU &CPU,
-                 const llvm::sys::fs::directory_entry &CPUPath);
-
-  bool IsNodeDirectory(const llvm::sys::fs::directory_entry &Path);
-
-private:
-  Hardware::CPUComponents &CPUs;
-  Hardware::CacheComponents &Caches;
-  Hardware::NodeComponents &Nodes;
-};
-
-class CacheVisitor : public SimpleParser {
+class LinuxHardwareParser {
 public:
   typedef llvm::SmallPtrSet<HardwareCache *, 4> CacheContainer;
   typedef llvm::DenseMap<unsigned, CacheContainer> CacheByLevelIndex;
 
 public:
-  CacheVisitor(Hardware::CPUComponents &CPUs,
-               Hardware::CacheComponents &Caches,
-               Hardware::NodeComponents &Nodes) : CPUs(CPUs),
-                                                  Caches(Caches),
-                                                  Nodes(Nodes) { }
+  LinuxHardwareParser(Hardware::CPUComponents &CPUs,
+                      Hardware::CacheComponents &Caches,
+                      Hardware::NodeComponents &Nodes) : CPUs(CPUs),
+                                                         Caches(Caches),
+                                                         Nodes(Nodes) { }
 
-public:
-  HardwareCache *operator()(const llvm::sys::fs::directory_entry &CachePath);
+  void operator()() {
+
+    llvm::Twine CPUsRoot = "/sys/devices/system/cpu";
+    llvm::error_code ErrCode;
+
+    llvm::sys::fs::directory_iterator I(CPUsRoot, ErrCode),
+                                      E;
+    do {
+      if(ErrCode)
+        llvm::report_fatal_error("Cannot read CPUs info");
+
+      ParseCPU(I->path());
+
+      I.increment(ErrCode);
+    } while(I != E);
+  }
 
 private:
-  bool ParseKind(llvm::StringRef File, HardwareCache::Kind &Kind);
+  HardwareCPU *ParseCPU(llvm::StringRef Path) {
+    llvm::FoldingSetNodeID ID;
+    void *InsertPoint;
+    llvm::error_code ErrCode;
+
+    // Must start with "cpu".
+    llvm::StringRef Name = llvm::sys::path::filename(Path);
+    if(!Name.startswith("cpu"))
+      return NULL;
+
+    // Must end with the CPU identifier.
+    unsigned CoreID;
+    if(Name.substr(3).getAsInteger(0, CoreID))
+      return NULL;
+
+    // Try looking if CPU has already been added.
+    ID.AddInteger(CoreID);
+    HardwareCPU *CPU = CPUs.FindNodeOrInsertPos(ID, InsertPoint);
+
+    // CPU not yet built.
+    if(!CPU) {
+      CPU = new HardwareCPU(CoreID);
+      CPUs.InsertNode(CPU, InsertPoint);
+    }
+
+    llvm::SmallString<32> CachesRoot;
+
+    llvm::sys::path::append(CachesRoot, Path, "cache");
+    llvm::sys::fs::directory_iterator I(CachesRoot.str(), ErrCode),
+                                      E;
+
+    // Look at cache hierarchy.
+    CacheByLevelIndex CacheLevelIndex;
+    do {
+      if(ErrCode)
+        llvm::report_fatal_error("Cannot read CPU info");
+
+      if(HardwareCache *Cache = ParseCache(I->path())) {
+        unsigned Level = Cache->GetLevel();
+
+        CacheLevelIndex[Level].insert(Cache);
+
+        // First level cache directly connected to the CPU.
+        if(Cache->IsFirstLevelCache()) {
+          CPU->AddLink(Cache);
+          Cache->AddLink(CPU);
+
+        // Link all previous level caches to this cache.
+        } else if(CacheLevelIndex.count(Level - 1)) {
+          CacheContainer &PrevLevel = CacheLevelIndex[Level - 1];
+          for(CacheContainer::iterator I = PrevLevel.begin(),
+                                       E = PrevLevel.end();
+                                       I != E;
+                                       ++I) {
+            (*I)->AddLink(Cache);
+            Cache->AddLink(*I);
+          }
+        }
+      }
+
+      I.increment(ErrCode);
+    } while(I != E);
+
+    llvm::SmallString<32> NodeRoot;
+    bool SysFsInfoAvailable;
+
+    HardwareNode *Node;
+
+    llvm::sys::path::append(NodeRoot, Path, "node");
+
+    // The sys fs does not export info about NUMA nodes: fall-back to proc fs.
+    if(llvm::sys::fs::is_directory(NodeRoot.str(), SysFsInfoAvailable) ||
+       !SysFsInfoAvailable)
+       Node = ParseProcFsNode("/proc");
+
+    // We can gather NUMA information from the sys fs.
+    else
+      Node = ParseSysFsNode(NodeRoot);
+
+    unsigned LastLevel = CacheLevelIndex.size();
+
+    if(!CacheLevelIndex.count(LastLevel))
+      llvm::report_fatal_error("Cache-less architectures not yet supported");
+
+    // Each CPU has only a last level cache.
+    HardwareCache *LLC = *CacheLevelIndex[LastLevel].begin();
+
+    // Link node with the LLC.
+    LLC->AddLink(Node);
+    Node->AddLink(LLC);
+
+    return CPU;
+  }
+
+  HardwareCache *ParseCache(llvm::StringRef Path) {
+    llvm::FoldingSetNodeID ID;
+    void *InsertPoint;
+
+    // Must start with "index".
+    llvm::StringRef Name = llvm::sys::path::filename(Path);
+    if(!Name.startswith("index"))
+      return NULL;
+
+    // Must end with the cache index for the current architecture.
+    unsigned Index;
+    if(Name.substr(5).getAsInteger(0, Index))
+      return NULL;
+
+    unsigned Level;
+    HardwareCache::Kind Kind;
+    HardwareComponent::LinksContainer SharedCPUs;
+
+    // Get info about the cache.
+    ParseCacheLevel(Path, Level);
+    ParseCacheKind(Path, Kind);
+    ParseCacheSharedCPUs(Path, SharedCPUs);
+
+    // Check if the cache has already been built.
+    ID.AddInteger(Level);
+    ID.AddInteger(Kind);
+    for(HardwareComponent::LinksContainer::iterator I = SharedCPUs.begin(),
+                                                    E = SharedCPUs.end();
+                                                    I != E;
+                                                    ++I)
+      ID.AddPointer(*I);
+    HardwareCache *Cache = Caches.FindNodeOrInsertPos(ID, InsertPoint);
+
+    // Cache not yet built.
+    if(!Cache) {
+      Cache = new HardwareCache(Level, Kind, SharedCPUs);
+      Caches.InsertNode(Cache, InsertPoint);
+
+      size_t Size, LineSize;
+
+      ParseCacheSize(Path, Size);
+      ParseCacheLineSize(Path, LineSize);
+
+      Cache->SetSize(Size);
+      Cache->SetLineSize(LineSize);
+    }
+
+    return Cache;
+  }
+
+  HardwareNode *ParseProcFsNode(llvm::StringRef Path) {
+    llvm::FoldingSetNodeID ID;
+    void *InsertPoint;
+
+    llvm::SmallString<32> MemInfoPath;
+    llvm::sys::path::append(MemInfoPath, Path, "meminfo");
+
+    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
+
+    // Force using a 2K file size; this allows to memory mapping /proc files.
+    if(llvm::MemoryBuffer::getFile(MemInfoPath, Buf, 2 * 1024))
+      llvm::report_fatal_error("Cannot read meminfo file");
+
+    // Check if node has already been built.
+    ID.AddInteger(0);
+    HardwareNode *Node = Nodes.FindNodeOrInsertPos(ID, InsertPoint);
+
+    // Node not yet built.
+    if(!Node) {
+      Node = new HardwareNode(0);
+      Nodes.InsertNode(Node, InsertPoint);
+
+      llvm::StringRef Input = Buf->getBuffer();
+
+      llvm::SmallVector<llvm::StringRef, 64> Lines;
+      Input.split(Lines, "\n");
+
+      for(llvm::SmallVector<llvm::StringRef, 64>::iterator I = Lines.begin(),
+                                                           E = Lines.end();
+                                                           I != E;
+                                                           ++I) {
+
+        if(I->startswith("MemTotal")) {
+          unsigned long long Size;
+          const char *K = NULL, *J, *T;
+
+          T = I->end();
+
+          // Look for first digit.
+          for(J = I->begin(); J != T && !K; ++J)
+            if(std::isdigit(*J))
+              K = J;
+
+          if(!K)
+            llvm::report_fatal_error("Corrupted meminfo file");
+
+          // Look for the last digit.
+          for(J = K; J != T && std::isdigit(*J); ++J) { }
+          llvm::StringRef RawSize(K, J - K);
+
+          // Look for the multiplier.
+          if(++J >= T)
+            llvm::report_fatal_error("Corrupted meminfo file");
+
+          llvm::StringRef Multiplier(J, T - J);
+
+          // Cannot fail, already parsed.
+          RawSize.getAsInteger(0, Size);
+
+          // Add multiplier.
+          Size *= llvm::StringSwitch<unsigned long long>(Multiplier)
+                    .Case("kB", 1024)
+                    .Default(0);
+
+          if(!Size)
+            llvm::report_fatal_error("Cannot parse memory size");
+
+          Node->SetMemorySize(Size);
+        }
+      }
+    }
+
+    return Node;
+  }
+
+  HardwareNode *ParseSysFsNode(llvm::StringRef Path) {
+    llvm_unreachable("Not yet implemented");
+  }
+
+  void ParseCacheLevel(llvm::StringRef CachePath, unsigned &Level) {
+    llvm::SmallString<32> LevelPath;
+    llvm::sys::path::append(LevelPath, CachePath, "level");
+
+    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
+
+    if(llvm::MemoryBuffer::getFile(LevelPath, Buf))
+      llvm::report_fatal_error("Cannot read cache level file");
+
+    llvm::StringRef Input(Buf->getBufferStart(), Buf->getBufferSize() - 1);
+
+    if(Input.getAsInteger(0, Level))
+      llvm::report_fatal_error("Cannot parse cache level file");
+  }
+
+  void ParseCacheKind(llvm::StringRef CachePath, HardwareCache::Kind &Kind) {
+    llvm::SmallString<32> TypePath;
+    llvm::sys::path::append(TypePath, CachePath, "type");
+
+    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
+
+    if(llvm::MemoryBuffer::getFile(TypePath, Buf))
+      llvm::report_fatal_error("Cannot read cache type file");
+
+    llvm::StringRef Input(Buf->getBufferStart(), Buf->getBufferSize() - 1);
+
+    Kind = llvm::StringSwitch<HardwareCache::Kind>(Input)
+           .Case("Instruction", HardwareCache::Instruction)
+           .Case("Data", HardwareCache::Data)
+           .Case("Unified", HardwareCache::Unified)
+           .Default(HardwareCache::Invalid);
+  }
+
+  void ParseCacheSharedCPUs(llvm::StringRef CachePath,
+                            HardwareComponent::LinksContainer &SharedCPUs) {
+    llvm::SmallString<32> SharedCPUPath;
+    llvm::sys::path::append(SharedCPUPath, CachePath, "shared_cpu_list");
+
+    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
+
+    if(llvm::MemoryBuffer::getFile(SharedCPUPath, Buf))
+      llvm::report_fatal_error("Cannot read cache shared CPUs file");
+
+    llvm::StringRef Input(Buf->getBufferStart(), Buf->getBufferSize() - 1);
+
+    llvm::SmallVector<llvm::StringRef, 4> SharedIDs;
+    Input.split(SharedIDs, ",");
+
+    for(llvm::SmallVector<llvm::StringRef, 4>::iterator I = SharedIDs.begin(),
+                                                        E = SharedIDs.end();
+                                                        I != E;
+                                                        ++I) {
+      llvm::FoldingSetNodeID ID;
+      void *InsertPoint;
+
+      unsigned CoreID;
+
+      if(I->getAsInteger(0, CoreID))
+        llvm::report_fatal_error("Cannot parse cache shared CPUs file");
+
+      ID.AddInteger(CoreID);
+      HardwareCPU *CPU = CPUs.FindNodeOrInsertPos(ID, InsertPoint);
+
+      if(!CPU) {
+        CPU = new HardwareCPU(CoreID);
+        CPUs.InsertNode(CPU, InsertPoint);
+      }
+
+      SharedCPUs.insert(CPU);
+    }
+  }
+
+  void ParseCacheSize(llvm::StringRef CachePath, size_t &Size) {
+    unsigned long long N;
+
+    llvm::SmallString<32> SizePath;
+    llvm::sys::path::append(SizePath, CachePath, "size");
+
+    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
+
+    if(llvm::MemoryBuffer::getFile(SizePath, Buf))
+      llvm::report_fatal_error("Cannot read cache size file");
+
+    const char *S = Buf->getBufferStart(),
+               *E = Buf->getBufferEnd(),
+               *J;
+
+    // Look for multiplier start.
+    for(J = S; J != E && std::isdigit(*J); ++J) { }
+
+    llvm::StringRef RawN(S, J - S);
+    llvm::StringRef Multiplier(J, E - 1 - J);
+
+    if(RawN.getAsInteger(0, N))
+      llvm::report_fatal_error("Cannot parse cache size file");
+
+    N *= llvm::StringSwitch<unsigned long long>(Multiplier)
+           .Case("K", 1024)
+           .Default(0);
+
+    if(!N)
+      llvm::report_fatal_error("Cannot parse cache size file");
+
+    Size = N;
+  }
+
+  void ParseCacheLineSize(llvm::StringRef CachePath, size_t &Size) {
+    unsigned long long N;
+
+    llvm::SmallString<32> LineSizePath;
+    llvm::sys::path::append(LineSizePath, CachePath, "coherency_line_size");
+
+    llvm::OwningPtr<llvm::MemoryBuffer> Buf;
+
+    if(llvm::MemoryBuffer::getFile(LineSizePath, Buf))
+      llvm::report_fatal_error("Cannot read cache line size file");
+
+    llvm::StringRef Input(Buf->getBufferStart(), Buf->getBufferSize() - 1);
+
+    if(Input.getAsInteger(0, N))
+      llvm::report_fatal_error("Cannot parse cache line size file");
+
+    Size = N;
+  }
 
 private:
   Hardware::CPUComponents &CPUs;
   Hardware::CacheComponents &Caches;
   Hardware::NodeComponents &Nodes;
-
-  CacheByLevelIndex ByLevelIndex;
 };
-
-class NUMAVisitor : public SimpleParser {
-protected:
-  NUMAVisitor(HardwareCPU &CPU,
-              Hardware::NodeComponents &Nodes) : CPU(CPU),
-                                                 Nodes(Nodes) { }
-protected:
-  HardwareCPU &CPU;
-  Hardware::NodeComponents &Nodes;
-};
-
-class NUMAAwareVisitor : public NUMAVisitor {
-public:
-  NUMAAwareVisitor(HardwareCPU &CPU,
-                   Hardware::NodeComponents &Nodes)
-    : NUMAVisitor(CPU, Nodes) { }
-
-public:
-  void operator()(const llvm::sys::fs::directory_entry &NodePath);
-};
-
-class NUMANotAwareVisitor : public NUMAVisitor {
-public:
-  NUMANotAwareVisitor(HardwareCPU &CPU,
-                      Hardware::NodeComponents &Nodes)
-   : NUMAVisitor(CPU, Nodes) { }
-
-public:
-  void operator()();
-};
-
-//
-// CPUVistor implementation.
-//
-
-HardwareCPU *
-CPUVisitor::operator()(const llvm::sys::fs::directory_entry &CPUPath) {
-  llvm::sys::fs::file_status status;
-  if(CPUPath.status(status) || !llvm::sys::fs::is_directory(status))
-    return NULL;
-
-  HardwareCPU *CPU = ParseCPU(CPUPath);
-  if(!CPU)
-    return NULL;
-
-  ParseCaches(CPUPath);
-  ParseNode(*CPU, CPUPath);
-
-  return CPU;
-}
-
-HardwareCPU *
-CPUVisitor::ParseCPU(const llvm::sys::fs::directory_entry &CPUPath) {
-  llvm::FoldingSetNodeID ID;
-  void *InsertPoint;
-
-  // Get the name in string format.
-  llvm::StringRef FullPath = CPUPath.path();
-  llvm::StringRef Name = llvm::sys::path::filename(FullPath);
-
-  // The CoreID is the CPU identifier for the operating system.
-  unsigned CoreID;
-  if(Name.substr(3).getAsInteger(0, CoreID))
-    return NULL;
-
-  // Try looking if CPU has already been added.
-  ID.AddInteger(CoreID);
-  HardwareCPU *CPU = CPUs.FindNodeOrInsertPos(ID, InsertPoint);
-  if(CPU)
-    return CPU;
-
-  // Find other CPUs on the same core.
-  llvm::SmallString<32> CoreSiblingsPath;
-  llvm::sys::path::append(CoreSiblingsPath,
-                          FullPath,
-                          "topology",
-                          "core_siblings_list");
-
-  // TODO: Integer to objects.
-  HardwareCPU::CPUIDContainer CoreSiblingsID;
-  if(!ParseList(CoreSiblingsPath, CoreSiblingsID, CoreID))
-    return NULL;
-
-  // Find HyperThreaded sibling, if any.
-  llvm::SmallString<32> HTSiblingsPath;
-  llvm::sys::path::append(HTSiblingsPath,
-                          FullPath,
-                          "topology",
-                          "thread_siblings_list");
-
-  // TODO: Integer to objects.
-  HardwareCPU::CPUIDContainer HTSiblingsID;
-  if(!ParseList(HTSiblingsPath, HTSiblingsID, CoreID))
-    return NULL;
-
-  // Mark CPU as visited.
-  CPU = new HardwareCPU(CoreID);
-  CPUs.InsertNode(CPU, InsertPoint);
-
-  return CPU;
-}
-
-void CPUVisitor::ParseCaches(const llvm::sys::fs::directory_entry &CPUPath) {
-  std::set<llvm::sys::Path> CachePaths;
-
-  // Switch to "cache" directory.
-  llvm::SmallString<32> Cache;
-  llvm::sys::path::append(Cache, CPUPath.path(), "cache");
-
-  // The directory_iterator constructor needs a llvm::Twine.
-  llvm::Twine CacheTwine(Cache);
-
-  // Get caches.
-  llvm::error_code ErrCode;
-  CacheVisitor CacheVisit(CPUs, Caches, Nodes);
-  for(llvm::sys::fs::directory_iterator I(CacheTwine, ErrCode),
-                                        E;
-                                        I != E;
-                                        I.increment(ErrCode)) {
-    if(ErrCode)
-      llvm::report_fatal_error("Cannot read cache directory");
-
-    CacheVisit(*I);
-  }
-}
-
-void CPUVisitor::ParseNode(HardwareCPU &CPU,
-                           const llvm::sys::fs::directory_entry &CPUPath) {
-  llvm::error_code ErrCode;
-  llvm::sys::fs::directory_iterator I(CPUPath.path(), ErrCode), E;
-  for(; I != E; I.increment(ErrCode)) {
-    if(ErrCode)
-      llvm::report_fatal_error("Cannot read CPU root directory");
-
-    if(IsNodeDirectory(*I))
-      break;
-  }
-
-  // The kernel exports nodes about NUMA nodes.
-  if(I != E)
-    NUMAAwareVisitor(CPU, Nodes)(*I);
-
-  // Old kernels, use the old way.
-  else
-    NUMANotAwareVisitor(CPU, Nodes)();
-}
-
-bool CPUVisitor::IsNodeDirectory(const llvm::sys::fs::directory_entry &Path) {
-  llvm::sys::fs::file_status status;
-  unsigned ID;
-
-  if(!Path.status(status) || !llvm::sys::fs::is_directory(status))
-    return false;
-
-  llvm::StringRef Name = Path.path();
-
-  if(!Name.startswith("node"))
-      return false;
-
-  return !Name.substr(4).getAsInteger(0, ID);
-}
-
-//
-// CacheVisitor implementation.
-//
-
-HardwareCache *
-CacheVisitor::operator()(const llvm::sys::fs::directory_entry &CachePath) {
-  llvm::FoldingSetNodeID ID;
-  void *InsertPoint;
-
-  // Each cache has its own directory.
-  llvm::sys::fs::file_status status;
-  if(CachePath.status(status) || !llvm::sys::fs::is_directory(status))
-    return NULL;
-
-  llvm::StringRef FullPath = CachePath.path();
-  llvm::StringRef Name = llvm::sys::path::filename(FullPath);
-
-  // Cache directory format is "indexN".
-  unsigned IndexID;
-  if(Name.substr(5).getAsInteger(0, IndexID))
-    return NULL;
-
-  // Find level.
-  llvm::SmallString<32> LevelPath;
-  llvm::sys::path::append(LevelPath, FullPath, "level");
-  unsigned Level;
-  if(!ParseNumber(LevelPath, Level))
-    return NULL;
-
-  // Find cache kind.
-  llvm::SmallString<32> TypePath;
-  llvm::sys::path::append(TypePath, FullPath, "type");
-  HardwareCache::Kind Kind;
-  if(!ParseKind(TypePath, Kind))
-    return NULL;
-
-  // Find cache size.
-  llvm::SmallString<32> SizePath;
-  llvm::sys::path::append(SizePath, FullPath, "size");
-  size_t Size;
-  if(!ParseFileSize(SizePath, Size))
-    return NULL;
-
-  HardwareComponent::LinksContainer ServedComps;
-
-  // First level cache: directly connected to cores.
-  if(Level == 1) {
-    llvm::SmallString<32> SharedCPUPath;
-    llvm::sys::path::append(SharedCPUPath, FullPath, "shared_cpu_list");
-
-    HardwareCPU::CPUIDContainer CoreIDs;
-    if(!ParseList(SharedCPUPath, CoreIDs))
-      return NULL;
-
-    // Get served cores high level description.
-    for(HardwareCPU::CPUIDContainer::iterator I = CoreIDs.begin(),
-                                              E = CoreIDs.end();
-                                              I != E;
-                                              ++I) {
-      llvm::FoldingSetNodeID CPUID;
-
-      CPUID.AddInteger(*I);
-      HardwareCPU *CPU = CPUs.FindNodeOrInsertPos(CPUID, InsertPoint);
-
-      // CPU not yet built: force building.
-      if(!CPU) {
-        llvm::SmallString<32> CPURootPath;
-        llvm::sys::path::append(CPURootPath,
-                                HardwareCPU::CPUsRoot,
-                                "cpu" + llvm::utostr(*I));
-        llvm::Twine CPURootTwinePath(CPURootPath);
-
-        llvm::sys::fs::directory_entry CPURoot(CPURootTwinePath);
-        CPU = CPUVisitor(CPUs, Caches, Nodes)(CPURoot);
-      }
-
-      // Remember link to CPU.
-      ServedComps.insert(CPU);
-    }
-
-  // Second, or higher level cache, connected to lower level caches.
-  } else {
-    CacheContainer &LLCaches = ByLevelIndex[Level - 1];
-
-    // Get lower level caches.
-    for(CacheContainer::iterator I = LLCaches.begin(),
-                                 E = LLCaches.end();
-                                 I != E;
-                                 ++I)
-      // Insert only "compatible" caches.
-      if((*I)->GetKind() & Kind)
-        ServedComps.insert(*I);
-  }
-
-  // Try looking for the cache.
-  ID.AddInteger(Level);
-  ID.AddInteger(Kind);
-
-  for(HardwareComponent::iterator I = ServedComps.begin(),
-                                  E = ServedComps.end();
-                                  I != E;
-                                  ++I)
-    ID.AddPointer(*I);
-
-  // Cache already built.
-  if(Caches.FindNodeOrInsertPos(ID, InsertPoint))
-    return NULL;
-
-  // Get cache-line size.
-  llvm::SmallString<32> LineSizePath;
-  llvm::sys::path::append(LineSizePath, FullPath, "coherency_line_size");
-  size_t LineSize;
-  if(!ParseNumber(LineSizePath, LineSize))
-    return NULL;
-
-  // Build cache.
-  HardwareCache *Cache = new HardwareCache(Level, Kind, Size, ServedComps);
-  Caches.InsertNode(Cache, InsertPoint);
-
-  // Connect to lower levels.
-  for(HardwareComponent::iterator I = ServedComps.begin(),
-                                  E = ServedComps.end();
-                                  I != E;
-                                  ++I)
-    (*I)->AddLink(Cache);
-
-  // Add non-essential infos.
-  Cache->SetLineSize(LineSize);
-
-  // Remember this level cache.
-  ByLevelIndex[Level].insert(Cache);
-
-  return Cache;
-}
-
-bool CacheVisitor::ParseKind(llvm::StringRef File,
-                             HardwareCache::Kind &Kind) {
-  llvm::OwningPtr<llvm::MemoryBuffer> Buf;
-
-  if(llvm::MemoryBuffer::getFile(File, Buf))
-    return false;
-
-  llvm::StringRef RawKind(Buf->getBufferStart(), Buf->getBufferSize() - 1);
-  Kind = llvm::StringSwitch<HardwareCache::Kind>(RawKind)
-           .Case("Instruction", HardwareCache::Instruction)
-           .Case("Data", HardwareCache::Data)
-           .Case("Unified", HardwareCache::Unified)
-           .Default(HardwareCache::Invalid);
-
-  return Kind != HardwareCache::Invalid;
-}
-
-//
-// NUMAAwareVisitor implementation.
-//
-
-void
-NUMAAwareVisitor::operator()(const llvm::sys::fs::directory_entry &NodePath) { }
-
-//
-// NUMANotAwareVisitor implementation.
-//
-
-void NUMANotAwareVisitor::operator()() {
-  llvm::FoldingSetNodeID ID;
-  void *InsertPoint;
-
-  // Lookup working directory.
-  llvm::sys::fs::directory_entry NodePath("/proc");
-
-  // Only the "0" node.
-  ID.AddInteger(0);
-  HardwareNode *Node = Nodes.FindNodeOrInsertPos(ID, InsertPoint);
-
-  // Node not yet built.
-  if(!Node) {
-    // Invalid path.
-    llvm::sys::fs::file_status status;
-    if(NodePath.status(status) || !llvm::sys::fs::is_directory(status))
-      return;
-
-    // We expect to find /proc/meminfo.
-    llvm::SmallString<32> MemInfoPath;
-    llvm::sys::path::append(MemInfoPath, NodePath.path(), "meminfo");
-
-    // Read it.
-    KeyValueContainer Values;
-    if(!ParseKeyValue(MemInfoPath, Values))
-      return;
-
-    // Find total installed memory size.
-    size_t Size;
-    if(!ParseSize(Values["MemTotal"], Size))
-      return;
-
-    // Register the node.
-    Node = new HardwareNode(0, Size);
-    Nodes.InsertNode(Node, InsertPoint);
-  }
-
-  // Setup links with LLC.
-  HardwareComponent *LLMem = CPU.GetLastLevelMemory();
-  Node->AddLink(LLMem);
-  LLMem->AddLink(Node);
-}
 
 } // End anonymous namespace.
 
@@ -604,7 +407,8 @@ void NUMANotAwareVisitor::operator()() {
 HardwareComponent *HardwareComponent::GetAncestor() {
   HardwareComponent *Comp, *Anc;
 
-  for(Comp = this, Anc = NULL; Comp; Anc = Comp, Comp = Comp->GetParent()) { }
+  for(Comp = this, Anc = NULL; Comp; Comp = Comp->GetParent())
+    Anc = Comp;
 
   return Anc;
 }
@@ -617,15 +421,13 @@ HardwareComponent *HardwareCPU::GetFirstLevelMemory() const {
   for(HardwareComponent::iterator I = begin(), E = end(); I != E; ++I) {
     HardwareComponent *Comp = *I;
 
-    if(!llvm::isa<HardwareCPU>(*I))
+    if(!llvm::isa<HardwareCPU>(Comp))
       return Comp;
 
   }
 
   return NULL;
 }
-
-const llvm::Twine HardwareCPU::CPUsRoot("/sys/devices/system/cpu");
 
 //
 // HardwareCache implementation.
@@ -657,7 +459,8 @@ const HardwareCache &HardwareNode::llc_back() const {
                      E = llc_end(),
                      J = I;
 
-  for(; I != E; ++I) { }
+  for(; I != E; ++I)
+    J = I;
 
   return *J;
 }
@@ -692,17 +495,9 @@ Hardware::Hardware() {
   Hardware::CacheComponents Caches;
   Hardware::NodeComponents Nodes;
 
-  llvm::error_code ErrCode;
-  CPUVisitor CPUVisit(CPUs, Caches, Nodes);
-  for(llvm::sys::fs::directory_iterator I(HardwareCPU::CPUsRoot, ErrCode),
-                                        E;
-                                        I != E;
-                                        I.increment(ErrCode)) {
-    if(ErrCode)
-      llvm::report_fatal_error("Cannot read CPUs root directory");
+  LinuxHardwareParser Parser(CPUs, Caches, Nodes);
 
-    CPUVisit(*I);
-  }
+  Parser();
   
   for(Hardware::CPUComponents::iterator I = CPUs.begin(),
                                         E = CPUs.end();

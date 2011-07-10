@@ -39,14 +39,18 @@ public:
 
 public:
   template <typename Ty>
-  class FilteredIterator {
+  class ConstFilteredIterator {
   public:
-    // Start constructor. Push all nodes to visit over the stack.
+    // Start constructor. Push all nodes to visit over the stack. Visit cannot
+    // pass Bound.
     template <typename Iter>
-    FilteredIterator(Iter I, Iter E) {
+    ConstFilteredIterator(Iter I, Iter E, const HardwareComponent *Bound) {
       // Initialize visit stack.
       for(; I != E; ++I)
         ToVisit.push(*I);
+
+      // Mark Bound visited, in order to avoid visiting behind nodes.
+      Visited.insert(Bound);
 
       // Force visiting in order to reach the first valid element.
       if(!ToVisit.empty() && !llvm::isa<Ty>(ToVisit.top()))
@@ -54,28 +58,28 @@ public:
     }
     
     // End constructor. ToVisit stack is empty.
-    FilteredIterator() {}
+    ConstFilteredIterator() {}
 
   public:
-    bool operator==(const FilteredIterator &That) const {
+    bool operator==(const ConstFilteredIterator &That) const {
       return ToVisit == That.ToVisit;
     }
 
-    bool operator!=(const FilteredIterator &That) const {
+    bool operator!=(const ConstFilteredIterator &That) const {
       return !(*this == That);
     }
 
-    Ty &operator*() const { return static_cast<Ty &>(*ToVisit.top()); }
-    Ty *operator->() const { return static_cast<Ty *>(ToVisit.top()); }
+    const Ty &operator*() const { return static_cast<Ty &>(*ToVisit.top()); }
+    const Ty *operator->() const { return static_cast<Ty *>(ToVisit.top()); }
 
     // Pre-increment.
-    FilteredIterator<Ty> &operator++() {
+    ConstFilteredIterator<Ty> &operator++() {
       Advance(); return *this;
     }
 
     // Post-increment.
-    FilteredIterator<Ty> operator++(int Ign) {
-      FilteredIterator<Ty> That = *this; ++*this; return That;
+    ConstFilteredIterator<Ty> operator++(int Ign) {
+      ConstFilteredIterator<Ty> That = *this; ++*this; return That;
     }
 
   private:
@@ -84,7 +88,7 @@ public:
         return;
 
       do {
-        HardwareComponent *Cur = ToVisit.top();
+        const HardwareComponent *Cur = ToVisit.top();
         Visited.insert(Cur);
         ToVisit.pop();
 
@@ -98,39 +102,39 @@ public:
     }
 
   private:
-    std::stack<HardwareComponent *> ToVisit;
-    std::set<HardwareComponent *> Visited;
+    std::stack<const HardwareComponent *> ToVisit;
+    std::set<const HardwareComponent *> Visited;
   };
 
   template <typename Ty>
-  class FilteredLinkIterator {
+  class ConstFilteredLinkIterator {
   public:
-    FilteredLinkIterator(iterator I, iterator E) : I(I), E(E) {
+    ConstFilteredLinkIterator(iterator I, iterator E) : I(I), E(E) {
       // Find first valid position.
       if(I != E && !llvm::isa<Ty>(*this->I))
         Advance();
     }
 
   public:
-    bool operator==(const FilteredLinkIterator &That) const {
+    bool operator==(const ConstFilteredLinkIterator &That) const {
       return I == That.I && E == That.E;
     }
 
-    bool operator!=(const FilteredLinkIterator &That) const {
+    bool operator!=(const ConstFilteredLinkIterator &That) const {
       return !(*this == That);
     }
 
-    Ty &operator*() const { return static_cast<Ty &>(*I.operator*()); }
-    Ty *operator->() const { return static_cast<Ty *>(&*I.operator*()); }
+    const Ty &operator*() const { return static_cast<Ty &>(*I.operator*()); }
+    const Ty *operator->() const { return static_cast<Ty *>(&*I.operator*()); }
 
     // Pre-increment.
-    FilteredLinkIterator<Ty> &operator++() {
+    ConstFilteredLinkIterator<Ty> &operator++() {
       Advance(); return *this;
     }
 
     // Post-increment.
-    FilteredLinkIterator<Ty> operator++(int Ign) {
-      FilteredLinkIterator<Ty> That = *this; ++*this; return That;
+    ConstFilteredLinkIterator<Ty> operator++(int Ign) {
+      ConstFilteredLinkIterator<Ty> That = *this; ++*this; return That;
     }
 
   private:
@@ -148,8 +152,6 @@ public:
 
 protected:
   HardwareComponent(Type Ty) : ComponentTy(Ty) { }
-  HardwareComponent(Type Ty, LinksContainer &Links) : ComponentTy(Ty),
-                                                      Links(Links) { }
 
 public:
   Type GetType() const { return ComponentTy; }
@@ -169,9 +171,6 @@ class HardwareCache;
 class HardwareNode;
 
 class HardwareCPU : public HardwareComponent, public llvm::FoldingSetNode {
-public:
-  static const llvm::Twine CPUsRoot;
-
 public:
   static bool classof(const HardwareComponent *Comp) {
     return Comp->GetType() == HardwareComponent::CPU;
@@ -215,31 +214,45 @@ public:
   };
 
 public:
-  typedef HardwareComponent::FilteredIterator<const HardwareCPU>
+  typedef HardwareComponent::ConstFilteredIterator<const HardwareCPU>
           const_cpu_iterator;
 
 public:
   const_cpu_iterator cpu_begin() const {
-    return const_cpu_iterator(begin(), end());
+    llvm::SmallVector<HardwareComponent *, 4> Comps;
+
+    for(iterator I = begin(), E = end(); I != E; ++I) {
+      HardwareComponent *Comp = *I;
+
+      if(!llvm::isa<HardwareNode>(Comp))
+        Comps.push_back(Comp);
+    }
+
+    return const_cpu_iterator(Comps.begin(), Comps.end(), this);
   }
-  const_cpu_iterator cpu_end() const { return const_cpu_iterator(); }
+
+  const_cpu_iterator cpu_end() const {
+    return const_cpu_iterator();
+  }
 
 public:
   HardwareCache(unsigned Level,
                 Kind CacheKind,
-                size_t Size,
-                HardwareComponent::LinksContainer &Comps)
-    : HardwareComponent(HardwareComponent::Cache, Comps),
+                HardwareComponent::LinksContainer &CPUs)
+    : HardwareComponent(HardwareComponent::Cache),
       Level(Level),
       CacheKind(CacheKind),
-      Size(Size) { }
+      CPUs(CPUs) { }
 
 public:
   void Profile(llvm::FoldingSetNodeID &ID) const {
     ID.AddInteger(Level);
     ID.AddInteger(CacheKind);
 
-    for(HardwareComponent::iterator I = begin(), E = end(); I != E; ++I)
+    for(HardwareComponent::iterator I = CPUs.begin(),
+                                    E = CPUs.end();
+                                    I != E;
+                                    ++I)
       ID.AddPointer(*I);
   }
 
@@ -247,6 +260,8 @@ public:
 
   unsigned GetLevel() const { return Level; }
   Kind GetKind() const { return CacheKind; }
+
+  void SetSize(size_t Size) { this->Size = Size; }
   size_t GetSize() const { return Size; }
 
   void SetLineSize(size_t LineSize) { this->LineSize = LineSize; }
@@ -254,11 +269,14 @@ public:
 
   HardwareComponent *GetNextLevelMemory();
 
+  bool IsFirstLevelCache() const { return Level == 1; }
+
 private:
   unsigned Level;
   Kind CacheKind;
-  size_t Size;
+  HardwareComponent::LinksContainer CPUs;
 
+  size_t Size;
   size_t LineSize;
 };
 
@@ -269,17 +287,29 @@ public:
   }
 
 public:
-  typedef HardwareComponent::FilteredIterator<const HardwareCPU>
+  typedef HardwareComponent::ConstFilteredIterator<HardwareCPU>
           const_cpu_iterator;
 
-  typedef HardwareComponent::FilteredLinkIterator<const HardwareCache>
+  typedef HardwareComponent::ConstFilteredLinkIterator<HardwareCache>
           const_llc_iterator;
 
 public:
   const_cpu_iterator cpu_begin() const {
-    return const_cpu_iterator(begin(), end());
+    llvm::SmallVector<HardwareComponent *, 2> Comps;
+
+    for(iterator I = begin(), E = end(); I != E; ++I) {
+      HardwareComponent *Comp = *I;
+
+      if(!llvm::isa<HardwareNode>(Comp))
+        Comps.push_back(Comp);
+    }
+
+    return const_cpu_iterator(begin(), end(), this);
   }
-  const_cpu_iterator cpu_end() const { return const_cpu_iterator(); }
+
+  const_cpu_iterator cpu_end() const {
+    return const_cpu_iterator();
+  }
 
   const_llc_iterator llc_begin() const {
     return const_llc_iterator(begin(), end());
@@ -292,10 +322,8 @@ public:
   const HardwareCache &llc_back() const;
 
 public:
-  HardwareNode(unsigned NodeID,
-               size_t MemorySize) : HardwareComponent(HardwareComponent::Node),
-                                    NodeID(NodeID),
-                                    MemorySize(MemorySize) { }
+  HardwareNode(unsigned NodeID) : HardwareComponent(HardwareComponent::Node),
+                                  NodeID(NodeID) { }
 
 public:
   void Profile(llvm::FoldingSetNodeID &ID) const { ID.AddInteger(NodeID); }
@@ -303,6 +331,8 @@ public:
   virtual HardwareComponent *GetParent() { return NULL; }
 
   unsigned GetNodeID() const { return NodeID; }
+
+  void SetMemorySize(size_t Size) { MemorySize = Size; }
   size_t GetMemorySize() const { return MemorySize; }
 
   unsigned CPUsCount() const;
