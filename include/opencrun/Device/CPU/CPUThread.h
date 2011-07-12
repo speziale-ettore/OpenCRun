@@ -66,7 +66,7 @@ public:
 public:
   float GetLoadIndicator();
 
-  size_t GetGlobalId(unsigned I) { return Cur.GetGlobalId(I); }
+  const DimensionInfo::iterator &GetCurrentIndex() { return Cur; }
 
   void SwitchToNextWorkItem();
 

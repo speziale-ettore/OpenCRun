@@ -1,6 +1,13 @@
 
 // Work-Item Functions.
+INTERNAL_CALL(get_work_dim, opencrun::cpu::GetWorkDim)
+INTERNAL_CALL(get_global_size, opencrun::cpu::GetGlobalSize)
 INTERNAL_CALL(get_global_id, opencrun::cpu::GetGlobalId)
+INTERNAL_CALL(get_local_size, opencrun::cpu::GetLocalSize)
+INTERNAL_CALL(get_local_id, opencrun::cpu::GetLocalId)
+INTERNAL_CALL(get_num_groups, opencrun::cpu::GetNumGroups)
+INTERNAL_CALL(get_group_id, opencrun::cpu::GetGroupId)
+INTERNAL_CALL(get_global_offset, opencrun::cpu::GetGlobalOffset)
 
 // Synchronization Functions.
 INTERNAL_CALL(barrier, opencrun::cpu::Barrier)

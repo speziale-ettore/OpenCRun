@@ -18,16 +18,44 @@ size_t DimensionInfo::DimensionInfoIterator::GetWorkGroup() const {
   return WorkGroup;
 }
 
+size_t
+DimensionInfo::DimensionInfoIterator::GetWorkGroupsCount(unsigned I) const {
+  return DimInfo->GetWorkGroupsCount(I);
+}
+
 size_t DimensionInfo::DimensionInfoIterator::GetWorkGroup(unsigned I) const {
   const IndexesContainer &WorkGroups = Indexes.second;
 
   return WorkGroups[I];
 }
 
+unsigned DimensionInfo::DimensionInfoIterator::GetWorkDim() const {
+  return DimInfo->GetDimensions();
+}
+
+size_t DimensionInfo::DimensionInfoIterator::GetGlobalSize(unsigned I) const {
+  return DimInfo->GetGlobalWorkItems(I);
+}
+
 size_t DimensionInfo::DimensionInfoIterator::GetGlobalId(unsigned I) const {
   const IndexesContainer &Locals = Indexes.first;
 
   return GetWorkGroup(I) * DimInfo->GetLocalWorkItems(I) + Locals[I];
+}
+
+size_t DimensionInfo::DimensionInfoIterator::GetLocalSize(unsigned I) const {
+  return DimInfo->GetLocalWorkItems(I);
+}
+
+size_t DimensionInfo::DimensionInfoIterator::GetLocalId(unsigned I) const {
+  const IndexesContainer &Locals = Indexes.first;
+
+  return Locals[I];
+}
+
+size_t DimensionInfo::DimensionInfoIterator::GetGlobalOffset(unsigned I) const {
+  // TODO: implement.
+  return 0;
 }
 
 void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {

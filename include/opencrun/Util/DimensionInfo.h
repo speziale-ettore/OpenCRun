@@ -119,9 +119,19 @@ public:
 
   public:
     size_t GetWorkGroup() const;
+
+    size_t GetWorkGroupsCount(unsigned I) const;
     size_t GetWorkGroup(unsigned I) const;
 
+    unsigned GetWorkDim() const;
+
+    size_t GetGlobalSize(unsigned I) const;
     size_t GetGlobalId(unsigned I) const;
+
+    size_t GetLocalSize(unsigned I) const;
+    size_t GetLocalId(unsigned I) const;
+
+    size_t GetGlobalOffset(unsigned I) const;
 
   private:
     void Advance(unsigned N);
