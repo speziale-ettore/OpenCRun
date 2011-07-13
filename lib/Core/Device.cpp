@@ -8,6 +8,14 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/system_error.h"
 
+// OpenCL extensions defines macro that clashes with clang internal symbols.
+// This is a workaround to include clang needed headers. Is this the right
+// solution?
+#define cl_khr_gl_sharing_save cl_khr_gl_sharing
+#undef cl_khr_gl_sharing
+#include "clang/Frontend/CompilerInstance.h"
+#define cl_khr_gl_sharing cl_khr_gl_sharing_save
+
 #include <sstream>
 
 using namespace opencrun;
@@ -31,8 +39,14 @@ bool Device::TranslateToBitCode(llvm::StringRef Opts,
                                 llvm::Module *&Mod) {
   llvm::sys::ScopedLock Lock(ThisLock);
 
-  // Install diagnostic.
+  // Create the compiler.
+  clang::CompilerInstance Compiler;
+
+  // Install custom diagnostic.
   CompilerDiag->setClient(&Diag, false);
+
+  // Set it as current invocation diagnostic.
+  Compiler.setDiagnostics(&*CompilerDiag);
 
   // Configure compiler invocation.
   clang::CompilerInvocation *Invocation = new clang::CompilerInvocation();
@@ -57,8 +71,6 @@ void Device::InitDiagnostic() {
 
   DiagIDs = new clang::DiagnosticIDs();
   CompilerDiag = new clang::Diagnostic(DiagIDs);
-
-  Compiler.setDiagnostics(&*CompilerDiag);
 }
 
 void Device::InitLibrary() {

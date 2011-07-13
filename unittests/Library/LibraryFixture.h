@@ -106,37 +106,36 @@ public:
   }
 
   template <typename RetTy>
-  void Invoke(llvm::StringRef Fun, RetTy &R) {
+  void Invoke(llvm::StringRef Fun,
+              RetTy &R,
+              cl::NDRange Space = cl::NDRange(1)) {
     cl::Buffer RetBuf = AllocReturnBuffer<RetTy>();
 
     cl::Kernel Kern = BuildKernel<RetTy>(Fun);
     Kern.setArg(0, RetBuf);
 
-    Queue.enqueueNDRangeKernel(Kern,
-                               cl::NullRange,
-                               cl::NDRange(1),
-                               cl::NDRange(1));
+    Queue.enqueueNDRangeKernel(Kern, cl::NullRange, Space, Space);
     Queue.enqueueReadBuffer(RetBuf, true, 0, sizeof(RetTy), &R);
   }
 
   template <typename RetTy, typename A1Ty>
-  void Invoke(llvm::StringRef Fun, RetTy &R, A1Ty A1) {
+  void Invoke(llvm::StringRef Fun,
+              RetTy &R,
+              A1Ty A1,
+              cl::NDRange Space = cl::NDRange(1)) {
     cl::Buffer RetBuf = AllocReturnBuffer<RetTy>();
-    cl::Buffer A1Buf = AllocArgBuffer<A1Ty>(A1);
+    cl::Buffer A1Buf = AllocArgBuffer<A1Ty>();
 
     cl::Kernel Kern = BuildKernel<RetTy, A1Ty>(Fun);
     Kern.setArg(0, RetBuf);
     Kern.setArg(1, A1Buf);
 
     Queue.enqueueWriteBuffer(A1Buf, true, 0, sizeof(A1Ty), &A1);
-    Queue.enqueueNDRangeKernel(Kern,
-                               cl::NullRange,
-                               cl::NDRange(1),
-                               cl::NDRange(1));
+    Queue.enqueueNDRangeKernel(Kern, cl::NullRange, Space, Space);
     Queue.enqueueReadBuffer(RetBuf, true, 0, sizeof(RetTy), &R);
   }
 
-private:
+protected:
   template <typename RetTy>
   cl::Kernel BuildKernel(llvm::StringRef Fun) {
     std::string KernName;
@@ -176,17 +175,13 @@ private:
   }
 
   template <typename Ty>
-  cl::Buffer AllocReturnBuffer() {
+  cl::Buffer AllocReturnBuffer(Ty T = Ty()) {
     return cl::Buffer(Ctx, CL_MEM_WRITE_ONLY, sizeof(Ty));
   }
 
   template <typename Ty>
-  cl::Buffer AllocArgBuffer(Ty &Arg) {
+  cl::Buffer AllocArgBuffer() {
     return cl::Buffer(Ctx, CL_MEM_READ_ONLY, sizeof(Ty));
-  }
-
-  void RuntimeFailed(llvm::StringRef Err) {
-    FAIL() << Err.str() << "\n";
   }
 
   void BuildKernelName(llvm::StringRef Fun, std::string &KernName) {
@@ -204,6 +199,11 @@ private:
   }
 
 private:
+  void RuntimeFailed(llvm::StringRef Err) {
+    FAIL() << Err.str() << "\n";
+  }
+
+protected:
   cl::Platform Plat;
   cl::Device Dev;
   cl::Context Ctx;

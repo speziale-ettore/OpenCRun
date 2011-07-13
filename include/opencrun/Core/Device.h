@@ -9,14 +9,6 @@
 #include "clang/Basic/TargetOptions.h"
 #include "llvm/Support/DataTypes.h"
 
-// OpenCL extensions defines macro that clashes with clang internal symbols.
-// This is a workaround to include clang needed headers. Is this the right
-// solution?
-#define cl_khr_gl_sharing_save cl_khr_gl_sharing
-#undef cl_khr_gl_sharing
-#include "clang/Frontend/CompilerInstance.h"
-#define cl_khr_gl_sharing cl_khr_gl_sharing_save
-
 struct _cl_device_id { };
 
 namespace opencrun {
@@ -367,12 +359,12 @@ protected:
 private:
   std::string EnvCompilerOpts;
 
-  // CompilerDiag is shared with Compiler, so we need reference counting.
+  // CompilerDiag is shared with clang::CompilerInstance objects, so we need
+  // reference counting.
   llvm::IntrusiveRefCntPtr<clang::Diagnostic> CompilerDiag;
 
   std::string Triple;
   std::string SystemResourcePath;
-  clang::CompilerInstance Compiler;
 };
 
 class GPUDevice : public Device {
