@@ -41,6 +41,44 @@ TYPED_TEST_P(MathFunctionsTest, acos) {
   ASSERT_GENTYPE_EQ(Expected, Output);
 }
 
-REGISTER_TYPED_TEST_CASE_P(MathFunctionsTest, acos);
+TYPED_TEST_P(MathFunctionsTest, acosh) {
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
+
+  Input = GENTYPE_CREATE(0);
+  this->Invoke("acosh", Output, Input);
+  ASSERT_GENTYPE_IS_NAN(Output);
+
+  Input = GENTYPE_CREATE(1);
+  Expected = GENTYPE_CREATE(0);
+  this->Invoke("acosh", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+}
+
+TYPED_TEST_P(MathFunctionsTest, acospi) {
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
+
+  Input = GENTYPE_CREATE(-1);
+  Expected = GENTYPE_CREATE(1);
+  this->Invoke("acospi", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  Input = GENTYPE_CREATE(0);
+  Expected = GENTYPE_CREATE(0.5);
+  this->Invoke("acospi", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  Input = GENTYPE_CREATE(1);
+  Expected = GENTYPE_CREATE(0);
+  this->Invoke("acospi", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+}
+
+REGISTER_TYPED_TEST_CASE_P(MathFunctionsTest, acos,
+                                              acosh,
+                                              acospi);
 
 INSTANTIATE_TYPED_TEST_CASE_P(OCLDev, MathFunctionsTest, OCLDevicesTypes);

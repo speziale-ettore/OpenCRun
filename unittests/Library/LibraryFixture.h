@@ -48,6 +48,7 @@ public:
   static Ty Create(ValTy Val);
 
   static void AssertEq(Ty A, Ty B);
+  static void AssertIsNaN(Ty A);
 
 public:
   static llvm::StringRef OCLCName;
@@ -83,6 +84,9 @@ public:
 //===----------------------------------------------------------------------===//
 #define ASSERT_GENTYPE_EQ(A, B) \
   (OCLTypeTraits<typename TypeParam::Type>::AssertEq(A, B))
+
+#define ASSERT_GENTYPE_IS_NAN(A) \
+  (OCLTypeTraits<typename TypeParam::Type>::AssertIsNaN(A))
 
 //===----------------------------------------------------------------------===//
 /// RuntimeFailed - OpenCL callback to report runtime errors.

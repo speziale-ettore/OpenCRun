@@ -38,6 +38,16 @@ SPECIALIZE_DEVICE_TRAITS(CPUDev, "CPU")
                                                              \
     for(unsigned I = 0; I < S; ++I)                          \
       OCLTypeTraits<T>::AssertEq(RawA[I], RawB[I]);          \
+  }                                                          \
+                                                             \
+  template <>                                                \
+  void OCLTypeTraits<T ## S>::AssertIsNaN(T ## S A) {        \
+    T RawA[S];                                               \
+                                                             \
+    std::memcpy(RawA, &A, sizeof(T ## S));                   \
+                                                             \
+    for(unsigned I = 0; I < S; ++I)                          \
+      OCLTypeTraits<T>::AssertIsNaN(RawA[I]);                \
   }
 
 #define SPECIALIZE_OCL_TYPE_TRAITS_VEC(T, N)     \
@@ -45,6 +55,12 @@ SPECIALIZE_DEVICE_TRAITS(CPUDev, "CPU")
   SPECIALIZE_OCL_TYPE_TRAITS_SIZED_VEC(T, N,  4) \
   SPECIALIZE_OCL_TYPE_TRAITS_SIZED_VEC(T, N,  8) \
   SPECIALIZE_OCL_TYPE_TRAITS_SIZED_VEC(T, N, 16)
+
+#define SPECIALIZE_OCL_TYPE_TRAITS_ISNAN(T) \
+  template <>                               \
+  void OCLTypeTraits<T>::AssertIsNaN(T A) { \
+    ASSERT_TRUE(std::isnan(A));             \
+  }
 
 #define SPECIALIZE_OCL_TYPE_TRAITS_CREATE(T, V) \
   template <> template <>                       \
@@ -80,6 +96,7 @@ SPECIALIZE_OCL_TYPE_TRAITS(uint64_t, "unsigned long")
 // Single precision floating point specializations.
 
 SPECIALIZE_OCL_TYPE_TRAITS(float, "float")
+SPECIALIZE_OCL_TYPE_TRAITS_ISNAN(float)
 SPECIALIZE_OCL_TYPE_TRAITS_VEC(cl_float, "float")
 SPECIALIZE_OCL_TYPE_TRAITS_CREATE(float, int32_t)
 SPECIALIZE_OCL_TYPE_TRAITS_CREATE(float, double)
@@ -89,6 +106,7 @@ SPECIALIZE_OCL_TYPE_TRAITS_VEC_CREATE(cl_float, double)
 #undef SPECIALIZE_OCL_TYPE_TRAITS
 #undef SPECIALIZE_OCL_TYPE_TRAITS_SIZED_VEC
 #undef SPECIALIZE_OCL_TYPE_TRAITS_VEC
+#undef SPECIALIZE_OCL_TYPE_TRAITS_ISNAN
 #undef SPECIALIZE_OCL_TYPE_TRAITS_CREATE
 #undef SPECIALIZE_OCL_TYPE_TRAITS_SIZED_VEC_CREATE
 #undef SPECIALIZE_OCL_TYPE_TRAITS_VEC_CREATE
