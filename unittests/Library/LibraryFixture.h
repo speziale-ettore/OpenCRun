@@ -67,6 +67,12 @@ public:
 };
 
 //===----------------------------------------------------------------------===//
+/// GENTTYPE_DECLARE - Declare a variable for generic type-based tests.
+//===----------------------------------------------------------------------===//
+#define GENTYPE_DECLARE(V) \
+  typename TypeParam::Type V
+
+//===----------------------------------------------------------------------===//
 /// GENTYPE_CREATE - Value creator for generic type-based tests.
 //===----------------------------------------------------------------------===//
 #define GENTYPE_CREATE(V) \

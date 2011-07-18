@@ -21,9 +21,9 @@ typedef testing::Types<ALL_DEVICE_TYPES> OCLDevicesTypes;
 TYPED_TEST_CASE_P(MathFunctionsTest);
 
 TYPED_TEST_P(MathFunctionsTest, acos) {
-  typename TypeParam::Type Input;
-  typename TypeParam::Type Expected;
-  typename TypeParam::Type Output;
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
 
   Input = GENTYPE_CREATE(-1);
   Expected = GENTYPE_CREATE(M_PI);
