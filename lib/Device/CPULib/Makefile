@@ -11,6 +11,11 @@ LEVEL = ../../..
 MODULE_NAME = opencrunCPULib
 
 #
+# Declare by-hand sources files, to get rid of LLVM building system.
+#
+SOURCES = WorkItem.cl Math.cl
+
+#
 # Include Makefile.common so we know what to do.
 #
 include $(LEVEL)/Makefile.common

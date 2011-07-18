@@ -1,0 +1,23 @@
+
+SUFFIXES = .cl
+
+BCCompile.OCL = $(LLVMCC) $(CPP.Flags) $(C.Flags) $(CFLAGS) $(CPPFLAGS) \
+                $(TargetCommonOpts) $(CompileCommonOpts)
+
+# Provide rule sets for when dependency generation is enabled.
+ifndef DISABLE_AUTO_DEPENDENCIES
+
+$(ObjDir)/%.ll: %.cl $(ObjDir)/.dir $(BUILT_SOURCES) $(LLVMCXX)
+	$(Echo) "Compiling $*.cl for $(BuildMode) build (bytecode)"
+	$(Verb) if $(BCCompile.OCL) $(BC_DEPEND_OPTIONS) \
+                        $< -o $(ObjDir)/$*.ll -S $(LLVMCC_EMITIR_FLAG) ; \
+                $(BC_DEPEND_MOVEFILE)
+
+# Provide alternate rule sets if dependencies are disabled.
+else
+
+$(ObjDir)/%.ll: %.cl $(ObjDir)/.dir $(BUILT_SOURCES) $(LLVMCXX)
+	$(Echo) "Compiling $*.cl for $(BuildMode) build (bytecode)"
+	$(BCCompile.OCL) $< -o $@ -S $(LLVMCC_EMITIR_FLAG)
+
+endif

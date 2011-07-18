@@ -1,6 +1,4 @@
 
-#include <ocldef.h>
-
 //
 // acos implementation.
 //

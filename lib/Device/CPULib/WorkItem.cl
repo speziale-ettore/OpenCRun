@@ -1,6 +1,4 @@
 
-#include <ocldef.h>
-
 // Implemented with an internal call.
 // uint get_work_dim();
 
