@@ -44,8 +44,39 @@ public:
 template <typename Ty>
 class OCLTypeTraits {
 public:
+  template <typename ValTy>
+  static Ty Create(ValTy Val);
+
+  static void AssertEq(Ty A, Ty B);
+
+public:
   static llvm::StringRef OCLCName;
 };
+
+//===----------------------------------------------------------------------===//
+/// DeviceTypePair - A couple device type, tested type. This class allows to
+///  pack two types into one type, providing specialized type names to access to
+///  the device type and to the tested type type. It is needed to exploit
+///  googletest typed test framework.
+//===----------------------------------------------------------------------===//
+template <typename DevTy, typename Ty>
+class DeviceTypePair {
+public:
+  typedef DevTy Dev;
+  typedef Ty Type;
+};
+
+//===----------------------------------------------------------------------===//
+/// GENTYPE_CREATE - Value creator for generic type-based tests.
+//===----------------------------------------------------------------------===//
+#define GENTYPE_CREATE(V) \
+  (OCLTypeTraits<typename TypeParam::Type>::Create(V))
+
+//===----------------------------------------------------------------------===//
+/// ASSERT_GENTYPE_EQ - Equality check for generic type-based tests.
+//===----------------------------------------------------------------------===//
+#define ASSERT_GENTYPE_EQ(A, B) \
+  (OCLTypeTraits<typename TypeParam::Type>::AssertEq(A, B))
 
 //===----------------------------------------------------------------------===//
 /// RuntimeFailed - OpenCL callback to report runtime errors.
@@ -212,6 +243,9 @@ protected:
   friend void ::RuntimeFailed<DevTy>(const char *, const void *, size_t, void *);
 };
 
+template <typename DevTy, typename Ty>
+class LibraryGenTypeFixture : public LibraryFixture<DevTy> { };
+
 class CPUDev { };
 
 template <>
@@ -227,16 +261,6 @@ public:
   static llvm::StringRef Name;
 };
 
-llvm::StringRef DeviceTraits<CPUDev>::Name = "CPU";
-
-typedef testing::Types<CPUDev> OCLDevices;
-
-template <>
-llvm::StringRef OCLTypeTraits<uint32_t>::OCLCName = "unsigned int";
-
-template <>
-llvm::StringRef OCLTypeTraits<uint64_t>::OCLCName = "unsigned long";
-
 template <typename DevTy>
 void RuntimeFailed(const char *Err,
                    const void *PrivInfo,
@@ -246,15 +270,5 @@ void RuntimeFailed(const char *Err,
 
   Fix->RuntimeFailed(Err);
 }
-
-// Since we do not use RTTI, specialized some googletest templates.
-namespace testing {
-namespace internal {
-
-template <>
-String GetTypeName<CPUDev>() { return "CPUDev"; }
-
-} // End namespace internal.
-} // End namespace testing.
 
 #endif // UNITTESTS_LIBRARY_LIBRARYFIXTURE_H

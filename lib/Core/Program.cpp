@@ -57,7 +57,7 @@ cl_int Program::Build(DevicesContainer &Devs,
   return ErrCode;
 }
 
-// Program builder requires two version of this macro.
+// Program requires two version of this macro.
 
 #undef RETURN_WITH_ERROR
 
@@ -228,7 +228,6 @@ ProgramBuilder &ProgramBuilder::SetSources(unsigned Count,
       Src = llvm::StringRef(Srcs[I], Lengths[I]);
     else
       Src = llvm::StringRef(Srcs[I]);
-
 
     Buf += Src;
     Buf += '\n';

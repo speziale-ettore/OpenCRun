@@ -28,10 +28,12 @@ void WorkItemLauncher();
 #define STACK_RSP_SAVE_OFFSET  (STACK_RBP_SAVE_OFFSET -  8)
 #define STACK_RET_SAVE_OFFSET  (STACK_RSP_SAVE_OFFSET -  8)
 
-#define STACK_BASE_OFFSET      (STACK_RET_SAVE_OFFSET  -  8)
+#define STACK_BASE_OFFSET      (STACK_RET_SAVE_OFFSET  - 8)
 
-#define STACK_KERN_FUNC_OFFSET (STACK_BASE_OFFSET      -  0)
-#define STACK_KERN_ARGS_OFFSET (STACK_KERN_FUNC_OFFSET -  8) 
+#define STACK_KERN_FUNC_OFFSET (STACK_BASE_OFFSET      - 0)
+#define STACK_KERN_ARGS_OFFSET (STACK_KERN_FUNC_OFFSET - 8)
+
+#define STACK_PTR_OFFSET       (STACK_KERN_ARGS_OFFSET - 8)
 
 // Layout notes:
 //
@@ -42,7 +44,8 @@ void WorkItemLauncher();
 // +------------------+
 // | Kernel function  |
 // | Kernel arguments |
-// +------------------+
+// |                  | <- Padding inserted because RSP must be 16-byte aligned
+// +------------------+    before call instruction.
 // | Kernel frame     |
 // | ...              |
 // +------------------+
@@ -60,9 +63,9 @@ void InitWorkItemStack(void *Stack,
 
   // Save stack info.
   *(uint64_t *) (StackAddr + STACK_RBP_SAVE_OFFSET) =
-    (uint64_t) (StackAddr + STACK_KERN_FUNC_OFFSET);
+    (uint64_t) (StackAddr + STACK_BASE_OFFSET);
   *(uint64_t *) (StackAddr + STACK_RSP_SAVE_OFFSET) =
-    (uint64_t) (StackAddr + STACK_KERN_ARGS_OFFSET);
+    (uint64_t) (StackAddr + STACK_PTR_OFFSET);
 
   // Place launcher address as fake return address.
   *(uint64_t *) (StackAddr + STACK_RET_SAVE_OFFSET) =
@@ -110,7 +113,7 @@ void RunWorkItems(void *Stack, size_t Size) {
   "callq *(%%rbp)\n"
   :
   : "r" (StackAddr + STACK_BASE_OFFSET),
-    "r" (StackAddr + STACK_KERN_ARGS_OFFSET)
+    "r" (StackAddr + STACK_PTR_OFFSET)
   :
   );
 

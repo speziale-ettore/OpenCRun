@@ -279,7 +279,6 @@ void CPUDevice::InitJIT() {
                                      .create();
 
   // Configure the JIT.
-  Engine->DisableSymbolSearching();
   Engine->InstallLazyFunctionCreator(LibLinker);
 
   // Force compilation of all functions.

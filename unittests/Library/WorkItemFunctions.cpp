@@ -4,6 +4,11 @@
 template <typename DevTy>
 class WorkItemFunctionsTest : public LibraryFixture<DevTy> { };
 
+#define ALL_DEVICE_TYPES \
+  CPUDev
+
+typedef testing::Types<ALL_DEVICE_TYPES> OCLDevicesType;
+
 TYPED_TEST_CASE_P(WorkItemFunctionsTest);
 
 TYPED_TEST_P(WorkItemFunctionsTest, get_work_dim) {
@@ -116,4 +121,4 @@ REGISTER_TYPED_TEST_CASE_P(WorkItemFunctionsTest, get_work_dim,
                                                   get_group_id,
                                                   get_global_offset);
 
-INSTANTIATE_TYPED_TEST_CASE_P(OCLDev, WorkItemFunctionsTest, OCLDevices);
+INSTANTIATE_TYPED_TEST_CASE_P(OCLDev, WorkItemFunctionsTest, OCLDevicesType);

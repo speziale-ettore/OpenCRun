@@ -72,7 +72,12 @@ bool Kernel::IsBuffer(const llvm::Type &Ty) {
        llvm::dyn_cast<llvm::PointerType>(&Ty)) {
     const llvm::Type *PointeeTy = PointerTy->getElementType();
 
-    return PointeeTy->isIntegerTy();
+    if(llvm::isa<llvm::VectorType>(PointeeTy))
+      PointeeTy = PointeeTy->getScalarType();
+
+    return PointeeTy->isIntegerTy() ||
+           PointeeTy->isFloatTy() ||
+           PointeeTy->isDoubleTy();
   }
 
   // TODO: handle other types.
