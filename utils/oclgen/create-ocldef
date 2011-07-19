@@ -1,0 +1,124 @@
+#!/bin/sh
+
+LIBS="Math"
+
+if test $# -ne 1; then
+  echo "usage: $0 directory"
+  exit -1
+fi
+
+TOOL_DIR=$(dirname $0)
+OUT_DIR="$1"
+
+OUT_FILE="$OUT_DIR/ocldef.h"
+
+rm -f $OUT_FILE
+
+# Prologue.
+cat >> $OUT_FILE << EOF
+
+#ifndef __CLANG_OCLDEF_H
+#define __CLANG_OCLDEF_H
+
+#include <float.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Built-in Scalar Data Types */
+
+typedef unsigned char uchar;
+typedef unsigned short ushort;
+typedef unsigned int uint;
+typedef unsigned long ulong;
+
+/* Built-in Vector Data Types */
+
+#define OPENCL_BUILDER(OPENCL_TYPE, SIZE)        \\
+  typedef __attribute__((ext_vector_type(SIZE))) \\
+  OPENCL_TYPE OPENCL_TYPE ## SIZE;
+
+#define OPENCL_VECT_TYPE(OPENCL_TYPE) \\
+  OPENCL_BUILDER(OPENCL_TYPE, 2)      \\
+  OPENCL_BUILDER(OPENCL_TYPE, 3)      \\
+  OPENCL_BUILDER(OPENCL_TYPE, 4)      \\
+  OPENCL_BUILDER(OPENCL_TYPE, 8)      \\
+  OPENCL_BUILDER(OPENCL_TYPE, 16)
+
+OPENCL_VECT_TYPE(char)
+OPENCL_VECT_TYPE(uchar)
+OPENCL_VECT_TYPE(short)
+OPENCL_VECT_TYPE(ushort)
+OPENCL_VECT_TYPE(int)
+OPENCL_VECT_TYPE(uint)
+OPENCL_VECT_TYPE(long)
+OPENCL_VECT_TYPE(ulong)
+OPENCL_VECT_TYPE(float)
+
+#undef OPENCL_BUILDER
+#undef OPENCL_VECT_TYPE
+
+/* Other Derived Types */
+
+typedef ulong cl_mem_fence_flags;
+
+/* Work-Item Functions */
+
+uint get_work_dim();
+size_t get_global_size(uint dimindx);
+size_t get_global_id(uint dimindx);
+size_t get_local_size(uint dimindx);
+size_t get_local_id(uint dimindx);
+size_t get_num_groups(uint dimindx);
+size_t get_group_id(uint dimindx);
+size_t get_global_offset(uint dimindx);
+
+/* Synchronization Functions */
+
+void barrier(cl_mem_fence_flags flags);
+
+/* BEGIN AUTO-GENERATED SECTION */
+EOF
+
+# Emit declarations via the tool.
+for LIB in $LIBS; do
+  python -B "$TOOL_DIR/$LIB.py" -d - >> $OUT_FILE
+  if test $? -ne 0; then
+    rm -f $OUT_FILE
+    exit -1
+  fi
+done
+
+# Epilogue.
+cat >> $OUT_FILE << EOF
+
+/* END AUTO-GENERATED SECTION */
+
+/*
+ * These macros are defined in math.h, but because we cannot include it, define
+ * them here. Definitions picked-up from GNU math.h.
+ */
+
+#define M_E            2.71828182845904523540f  /* e          */
+#define M_LOG2E        1.44269504088896340740f  /* log_2 e    */
+#define M_LOG10E       0.43429448190325182765f  /* log_10 e   */
+#define M_LN2          0.69314718055994530942f  /* log_e 2    */
+#define M_LN10         2.30258509299404568402f  /* log_e 10   */
+#define M_PI           3.14159265358979323846f  /* pi         */
+#define M_PI_2         1.57079632679489661923f  /* pi/2       */
+#define M_PI_4         0.78539816339744830962f  /* pi/4       */
+#define M_1_PI         0.31830988618379067154f  /* 1/pi       */
+#define M_2_PI         0.63661977236758134308f  /* 2/pi       */
+#define M_2_SQRTPI     1.12837916709551257390f  /* 2/sqrt(pi) */
+#define M_SQRT2        1.41421356237309504880f  /* sqrt(2)    */
+#define M_SQRT1_2      0.70710678118654752440f  /* 1/sqrt(2)  */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __CLANG_OCLDEF_H */
+EOF

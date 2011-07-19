@@ -1,0 +1,27 @@
+#!/bin/sh
+
+LIBS="math"
+
+if test $# -ne 2; then
+  echo "usage: $0 library output_file"
+  exit -1
+fi
+
+TOOL_DIR=$(dirname $0)
+LIB="$1"
+OUT_FILE="$2"
+
+rm -f $OUT_FILE
+
+# Prologue.
+cat >> $OUT_FILE << EOF
+
+/* THIS FILE IS AUTO-GENERATED */
+EOF
+
+# Emit declarations via the tool.
+python -B "$TOOL_DIR/$LIB.py" -i - >> $OUT_FILE
+if test $? -ne 0; then
+  rm -f $OUT_FILE
+  exit -1
+fi

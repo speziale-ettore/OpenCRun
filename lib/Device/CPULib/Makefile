@@ -19,3 +19,10 @@ SOURCES = WorkItem.cl Math.cl
 # Include Makefile.common so we know what to do.
 #
 include $(LEVEL)/Makefile.common
+
+%.cl:
+	$(Echo) "Building $@ library with create-ocllib"
+	$(Verb) $(CreateOCLLib) $* $(call SYSPATH, $@)
+
+clean-local::
+	$(RM) -f Math.cl
