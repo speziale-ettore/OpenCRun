@@ -17,7 +17,7 @@ namespace {
 
 class SignatureBuilder {
 public:
-  typedef llvm::SmallVector<const llvm::Type *, 4> TypesContainer;
+  typedef llvm::SmallVector<llvm::Type *, 4> TypesContainer;
 
 public:
   SignatureBuilder(const llvm::StringRef Name,
@@ -36,7 +36,7 @@ public:
   void SetVoid() { Void = true; }
 
   void SetTypeDone() {
-    const llvm::Type *Ty;
+    llvm::Type *Ty;
 
     if(Integer && Unsigned && !Long)
       Ty = GetUIntTy();
@@ -58,7 +58,7 @@ public:
     if(Types.size() < 1)
       llvm_unreachable("Not enough arguments");
 
-    const llvm::Type *RetTy = Types.front();
+    llvm::Type *RetTy = Types.front();
     Types.erase(Types.begin());
 
     llvm::FunctionType *FunTy = llvm::FunctionType::get(RetTy, Types, false);
@@ -93,25 +93,25 @@ private:
     delete Diag;
   }
 
-  const llvm::Type *GetUIntTy() {
+  llvm::Type *GetUIntTy() {
     return GetIntTy(clang::TargetInfo::UnsignedInt);
   }
 
-  const llvm::Type *GetULongTy() {
+  llvm::Type *GetULongTy() {
     return GetIntTy(clang::TargetInfo::UnsignedLong);
   }
 
-  const llvm::Type *GetSizeTTy() {
+  llvm::Type *GetSizeTTy() {
     return GetIntTy(TargetInfo->getSizeType());
   }
 
-  const llvm::Type *GetIntTy(clang::TargetInfo::IntType Ty) {
+  llvm::Type *GetIntTy(clang::TargetInfo::IntType Ty) {
     unsigned Width = TargetInfo->getTypeWidth(Ty);
 
     return llvm::Type::getIntNTy(Mod.getContext(), Width);
   }
 
-  const llvm::Type *GetVoidTy() {
+  llvm::Type *GetVoidTy() {
     return llvm::Type::getVoidTy(Mod.getContext());
   }
 

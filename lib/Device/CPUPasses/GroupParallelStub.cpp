@@ -89,9 +89,9 @@ bool GroupParallelStub::BuildStub(llvm::Function &Kern) {
   llvm::LLVMContext &Ctx = Mod->getContext();
 
   // Make function type.
-  const llvm::Type *RetTy = llvm::Type::getVoidTy(Ctx);
-  const llvm::Type *Int8PtrTy = llvm::Type::getInt8PtrTy(Ctx);
-  const llvm::Type *ArgTy = llvm::PointerType::getUnqual(Int8PtrTy);
+  llvm::Type *RetTy = llvm::Type::getVoidTy(Ctx);
+  llvm::Type *Int8PtrTy = llvm::Type::getInt8PtrTy(Ctx);
+  llvm::Type *ArgTy = llvm::PointerType::getUnqual(Int8PtrTy);
   llvm::FunctionType *StubTy = llvm::FunctionType::get(RetTy, ArgTy, false);
 
   // Create the stub.
@@ -123,7 +123,7 @@ bool GroupParallelStub::BuildStub(llvm::Function &Kern) {
                                                                     Entry);
 
     // Cast to the appropriate type.
-    const llvm::Type *ArgPtrTy = llvm::PointerType::getUnqual(I->getType());
+    llvm::Type *ArgPtrTy = llvm::PointerType::getUnqual(I->getType());
     llvm::CastInst *CastedAddr = llvm::CastInst::CreatePointerCast(Addr,
                                                                    ArgPtrTy,
                                                                    "",
@@ -134,7 +134,7 @@ bool GroupParallelStub::BuildStub(llvm::Function &Kern) {
   }
 
   // Call the kernel.
-  llvm::CallInst::Create(&Kern, KernArgs.begin(), KernArgs.end(), "", Entry);
+  llvm::CallInst::Create(&Kern, KernArgs, "", Entry);
 
   // Call the implicit barrier.
   llvm::Value *Flag = llvm::ConstantInt::get(llvm::Type::getInt64Ty(Ctx), 0);

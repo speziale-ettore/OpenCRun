@@ -87,10 +87,10 @@ public:
     return Codes.count(&Dev) ? Codes[&Dev] : NULL;
   }
 
-  const llvm::FunctionType &GetType() const {
+  llvm::FunctionType &GetType() const {
     // All stored functions share the same signature, just return the first.
     CodesContainer::const_iterator I = Codes.begin();
-    const llvm::Function &Func = *I->second;
+    llvm::Function &Func = *I->second;
 
     return *Func.getFunctionType();
   }
@@ -129,8 +129,8 @@ public:
   bool RequireWorkGroupSizes() const { return false; }
 
 private:
-  const llvm::Type *GetArgType(unsigned I) const {
-    const llvm::FunctionType &KernTy = GetType();
+  llvm::Type *GetArgType(unsigned I) const {
+    llvm::FunctionType &KernTy = GetType();
 
     return I < KernTy.getNumParams() ? KernTy.getParamType(I) : NULL;
   }
@@ -147,7 +147,7 @@ private:
     return OpenCLMDHandler.GetArgAddressSpace(Kern, I);
   }
 
-  bool IsBuffer(const llvm::Type &Ty);
+  bool IsBuffer(llvm::Type &Ty);
 
 private:
   llvm::sys::Mutex ThisLock;

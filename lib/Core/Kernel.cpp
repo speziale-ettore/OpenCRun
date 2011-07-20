@@ -28,7 +28,7 @@ Kernel::~Kernel() {
 }
 
 cl_int Kernel::SetArg(unsigned I, size_t Size, const void *Arg) {
-  const llvm::Type *ArgTy = GetArgType(I);
+  llvm::Type *ArgTy = GetArgType(I);
 
   if(!ArgTy)
     RETURN_WITH_ERROR(CL_INVALID_ARG_INDEX,
@@ -67,10 +67,9 @@ cl_int Kernel::SetBufferArg(unsigned I, size_t Size, const void *Arg) {
   return CL_SUCCESS;
 }
 
-bool Kernel::IsBuffer(const llvm::Type &Ty) {
-  if(const llvm::PointerType *PointerTy =
-       llvm::dyn_cast<llvm::PointerType>(&Ty)) {
-    const llvm::Type *PointeeTy = PointerTy->getElementType();
+bool Kernel::IsBuffer(llvm::Type &Ty) {
+  if(llvm::PointerType *PointerTy = llvm::dyn_cast<llvm::PointerType>(&Ty)) {
+    llvm::Type *PointeeTy = PointerTy->getElementType();
 
     if(llvm::isa<llvm::VectorType>(PointeeTy))
       PointeeTy = PointeeTy->getScalarType();
@@ -79,8 +78,6 @@ bool Kernel::IsBuffer(const llvm::Type &Ty) {
            PointeeTy->isFloatTy() ||
            PointeeTy->isDoubleTy();
   }
-
-  // TODO: handle other types.
 
   return false;
 }
