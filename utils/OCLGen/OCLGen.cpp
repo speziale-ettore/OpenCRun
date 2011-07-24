@@ -40,6 +40,7 @@ using namespace llvm;
 enum ActionType {
   PrintRecords,
   GenOCLLibImpl,
+  GenOCLDef,
   PrintEnums,
   PrintSets
 };
@@ -51,6 +52,8 @@ namespace {
                                "Print all records to stdout (default)"),
                     clEnumValN(GenOCLLibImpl, "gen-ocl-lib-impl",
                                "Generate OpenCL C library implementation"),
+                    clEnumValN(GenOCLDef, "gen-ocldef",
+                               "Generate ocldef.h"),
                     clEnumValN(PrintEnums, "print-enums",
                                "Print enum values for a class"),
                     clEnumValN(PrintSets, "print-sets",
@@ -142,6 +145,9 @@ int main(int argc, char *argv[]) {
       break;
     case GenOCLLibImpl:
       OCLLibImplEmitter(Records).run(Out.os());
+      break;
+    case GenOCLDef:
+      OCLDefEmitter(Records).run(Out.os());
       break;
     case PrintEnums:
     {

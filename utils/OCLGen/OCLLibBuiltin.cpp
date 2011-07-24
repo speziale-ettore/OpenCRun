@@ -214,3 +214,19 @@ llvm::OCLBuiltinContainer llvm::LoadOCLBuiltins(const RecordKeeper &RC) {
 
   return Blts;
 }
+
+//
+// LoadOCLVectTypes implementation.
+//
+
+llvm::OCLVectTypeContainer llvm::LoadOCLVectTypes(const RecordKeeper &RC) {
+  std::vector<Record *> RawVects = RC.getAllDerivedDefinitions("OCLVectType");
+  OCLVectTypeContainer Vects;
+
+  for(unsigned I = 0, E = RawVects.size(); I < E; ++I) {
+    OCLType *Ty = TypeTable.GetType(*RawVects[I]);
+    Vects.push_back(static_cast<OCLVectType *>(Ty));
+  }
+
+  return Vects;
+}

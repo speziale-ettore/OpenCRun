@@ -183,8 +183,10 @@ private:
 };
 
 typedef std::vector<OCLLibBuiltin> OCLBuiltinContainer;
+typedef std::vector<OCLVectType *> OCLVectTypeContainer;
 
 OCLBuiltinContainer LoadOCLBuiltins(const RecordKeeper &RC);
+OCLVectTypeContainer LoadOCLVectTypes(const RecordKeeper &RC);
 
 } // End namespace llvm.
 

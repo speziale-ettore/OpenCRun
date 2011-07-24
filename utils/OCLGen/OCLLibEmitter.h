@@ -35,6 +35,21 @@ private:
                      llvm::StringRef Name);
 };
 
+class OCLDefEmitter : public OCLLibEmitter {
+public:
+  OCLDefEmitter(RecordKeeper &R) : OCLLibEmitter(R) { }
+
+public:
+  virtual void run(raw_ostream &OS);
+
+private:
+  void EmitIncludes(raw_ostream &OS);
+  void EmitTypes(raw_ostream &OS);
+  void EmitWorkItemDecls(raw_ostream &OS);
+  void EmitSynchronizationDecls(raw_ostream &OS);
+  void EmitMacros(raw_ostream &OS);
+};
+
 } // End namespace llvm.
 
 #endif // OCLLIB_EMITTER_H
