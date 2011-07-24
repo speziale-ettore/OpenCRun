@@ -11,7 +11,18 @@ LEVEL = ../../..
 MODULE_NAME = opencrunCPULib
 
 #
-# Declare by-hand sources files, to get rid of LLVM building system.
+# The ocldef is in fact tblgen, so declare we want tblgen support to enable .inc
+# files handling.
+#
+TABLEGEN_INC_FILES_COMMON = 1
+
+#
+# Auto-generate some libraries.
+#
+BUILT_SOURCES = Math.inc
+
+#
+# The LLVM build system does not known recognize .cl files automatically.
 #
 SOURCES = WorkItem.cl Math.cl
 
@@ -20,9 +31,7 @@ SOURCES = WorkItem.cl Math.cl
 #
 include $(LEVEL)/Makefile.common
 
-%.cl:
-	$(Echo) "Building $@ library with create-ocllib"
-	$(Verb) $(CreateOCLLib) $* $(call SYSPATH, $@)
-
-clean-local::
-	$(RM) -f Math.cl
+$(ObjDir)/Math.inc.tmp: $(PROJ_SRC_ROOT)/include/opencrun/Device/GenLib/Math.td \
+                        $(OCLGEN) $(ObjDir)/.dir
+	$(Echo) "Building Math library with oclgen"
+	$(Verb) $(OCLGen) -gen-ocl-lib-impl -o $(call SYSPATH, $@) $<

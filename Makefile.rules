@@ -1,11 +1,12 @@
 
 SUFFIXES = .cl
 
-CREATE_OCLLIB = $(PROJ_SRC_ROOT)/utils/oclgen/create-ocllib
+OCLGEN = $(ToolDir)/oclgen
 
 BCCompile.OCL = $(LLVMCC) $(CPP.Flags) $(C.Flags) $(CFLAGS) $(CPPFLAGS) \
                 $(TargetCommonOpts) $(CompileCommonOpts)
-CreateOCLLib = $(CREATE_OCLLIB)
+OCLGen = $(OCLGEN) -I $(call SYSPATH, $(PROJ_SRC_DIR)) \
+	 -I $(call SYSPATH, $(PROJ_SRC_ROOT)/include)
 
 # Provide rule sets for when dependency generation is enabled.
 ifndef DISABLE_AUTO_DEPENDENCIES

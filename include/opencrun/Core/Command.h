@@ -63,14 +63,14 @@ public:
 public:
   bool CanRun() const;
   bool IsProfiled() const;
-  bool IsBlocking() { return Blocking; }
+  bool IsBlocking() const { return Blocking; }
 
 protected:
   Type CommandTy;
   EventsContainer WaitList;
   bool Blocking;
 
-  InternalEvent* NotifyEv;
+  InternalEvent *NotifyEv;
 };
 
 class EnqueueReadBuffer : public Command {
