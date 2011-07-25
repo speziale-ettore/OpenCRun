@@ -38,3 +38,7 @@ def blt_exp    : MathBuiltin<ocl_gentype_1,
 def blt_sin    : MathBuiltin<ocl_gentype_1,
                              [ocl_gentype_1],
                              [{return __builtin_sinf(x0);}]>;
+// TODO: fill the gap.
+def blt_sqrt   : MathBuiltin<ocl_gentype_1,
+                             [ocl_gentype_1],
+                             [{return __builtin_sqrtf(x0);}]>;
