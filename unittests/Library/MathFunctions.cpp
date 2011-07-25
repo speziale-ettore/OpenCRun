@@ -117,12 +117,39 @@ TYPED_TEST_P(MathFunctionsTest, exp) {
   ASSERT_GENTYPE_EQ(Expected, Output);
 }
 
+// TODO: fill the gap.
+
+TYPED_TEST_P(MathFunctionsTest, sin) {
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
+
+  Input = GENTYPE_CREATE(0);
+  Expected = GENTYPE_CREATE(0);
+  this->Invoke("sin", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  Input = GENTYPE_CREATE(M_PI_2);
+  Expected = GENTYPE_CREATE(1);
+  this->Invoke("sin", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  // Do no perform the check near pi, the FPU loss precision here!
+
+  Input = GENTYPE_CREATE(M_PI + M_PI_2);
+  Expected = GENTYPE_CREATE(-1);
+  this->Invoke("sin", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+}
+
 REGISTER_TYPED_TEST_CASE_P(MathFunctionsTest, acos,
                                               acosh,
                                               acospi,
 // TODO: fill the gap.
                                               cos,
 // TODO: fill the gap.
-                                              exp);
+                                              exp,
+// TODO: fill the gap.
+                                              sin);
 
 INSTANTIATE_TYPED_TEST_CASE_P(OCLDev, MathFunctionsTest, OCLDevicesTypes);
