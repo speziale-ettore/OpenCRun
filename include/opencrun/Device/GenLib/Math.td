@@ -30,3 +30,7 @@ def blt_acospi : MathBuiltin<ocl_gentype_1,
 def blt_cos    : MathBuiltin<ocl_gentype_1,
                              [ocl_gentype_1],
                              [{return __builtin_cosf(x0);}]>;
+// TODO: file the gap.
+def blt_exp    : MathBuiltin<ocl_gentype_1,
+                             [ocl_gentype_1],
+                             [{return __builtin_expf(x0);}]>;

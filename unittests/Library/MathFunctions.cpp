@@ -77,6 +77,8 @@ TYPED_TEST_P(MathFunctionsTest, acospi) {
   ASSERT_GENTYPE_EQ(Expected, Output);
 }
 
+// TODO: fill the gap.
+
 TYPED_TEST_P(MathFunctionsTest, cos) {
   GENTYPE_DECLARE(Input);
   GENTYPE_DECLARE(Expected);
@@ -102,10 +104,25 @@ TYPED_TEST_P(MathFunctionsTest, cos) {
   ASSERT_GENTYPE_EQ(Expected, Output);
 }
 
+// TODO: fill the gap.
+
+TYPED_TEST_P(MathFunctionsTest, exp) {
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
+
+  Input = GENTYPE_CREATE(0);
+  Expected = GENTYPE_CREATE(1);
+  this->Invoke("exp", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+}
+
 REGISTER_TYPED_TEST_CASE_P(MathFunctionsTest, acos,
                                               acosh,
                                               acospi,
 // TODO: fill the gap.
-                                              cos);
+                                              cos,
+// TODO: fill the gap.
+                                              exp);
 
 INSTANTIATE_TYPED_TEST_CASE_P(OCLDev, MathFunctionsTest, OCLDevicesTypes);
