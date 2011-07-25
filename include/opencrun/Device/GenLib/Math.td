@@ -26,3 +26,7 @@ def blt_acosh  : MathBuiltin<ocl_gentype_1,
 def blt_acospi : MathBuiltin<ocl_gentype_1,
                              [ocl_gentype_1],
                              [{return acos(x0) / M_PI; }]>;
+// TODO: fill the gap.
+def blt_cos    : MathBuiltin<ocl_gentype_1,
+                             [ocl_gentype_1],
+                             [{return __builtin_cosf(x0);}]>;

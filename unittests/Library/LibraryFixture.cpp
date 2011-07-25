@@ -16,13 +16,13 @@ SPECIALIZE_DEVICE_TRAITS(CPUDev, "CPU")
 // OCLTypeTraits specializations.
 //
 
-#define SPECIALIZE_OCL_TYPE_TRAITS(T, N)          \
+#define SPECIALIZE_OCL_TYPE_TRAITS(T, N, AE)      \
   template <>                                     \
   llvm::StringRef OCLTypeTraits<T>::OCLCName = N; \
                                                   \
   template <>                                     \
   void OCLTypeTraits<T>::AssertEq(T A, T B) {     \
-    ASSERT_EQ(A, B);                              \
+    AE(A, B);                                     \
   }
 
 #define SPECIALIZE_OCL_TYPE_TRAITS_SIZED_VEC(T, N, S)        \
@@ -90,12 +90,12 @@ SPECIALIZE_DEVICE_TRAITS(CPUDev, "CPU")
 
 // Fixed width integer specializations.
 
-SPECIALIZE_OCL_TYPE_TRAITS(uint32_t, "unsigned int")
-SPECIALIZE_OCL_TYPE_TRAITS(uint64_t, "unsigned long")
+SPECIALIZE_OCL_TYPE_TRAITS(uint32_t, "unsigned int", ASSERT_EQ)
+SPECIALIZE_OCL_TYPE_TRAITS(uint64_t, "unsigned long", ASSERT_EQ)
 
 // Single precision floating point specializations.
 
-SPECIALIZE_OCL_TYPE_TRAITS(float, "float")
+SPECIALIZE_OCL_TYPE_TRAITS(float, "float", ASSERT_FLOAT_EQ)
 SPECIALIZE_OCL_TYPE_TRAITS_ISNAN(float)
 SPECIALIZE_OCL_TYPE_TRAITS_VEC(cl_float, "float")
 SPECIALIZE_OCL_TYPE_TRAITS_CREATE(float, int32_t)
