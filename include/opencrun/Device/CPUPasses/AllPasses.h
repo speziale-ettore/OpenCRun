@@ -7,6 +7,7 @@
 namespace opencrun {
 
 llvm::Pass *CreateGroupParallelStubPass(llvm::StringRef Kernel = "");
+llvm::Pass *CreateBlockSplittingPass(llvm::StringRef Kernel = "");
 
 } // End namespace opencrun.
 

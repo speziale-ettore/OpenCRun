@@ -2,25 +2,17 @@
 #include "opencrun/Device/CPUPasses/AllPasses.h"
 #include "opencrun/Util/OpenCLMetadataHandler.h"
 
+#include "PassUtils.h"
+
 #define DEBUG_TYPE "CPU-group-parallel-stub"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Constants.h"
-#include "llvm/Instructions.h"
 #include "llvm/Module.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Type.h"
 #include "llvm/DerivedTypes.h"
 
 using namespace opencrun;
-
-static llvm::cl::opt<std::string> Kernel("kernel",
-                                         llvm::cl::init(""),
-                                         llvm::cl::Hidden,
-                                         llvm::cl::desc("Kernel function "
-                                                        "for which the stub "
-                                                        "must be built"));
 
 STATISTIC(GroupParallelStubs, "Number of CPU group parallel stubs created");
 
@@ -33,7 +25,7 @@ public:
 public:
   GroupParallelStub(llvm::StringRef Kernel = "") :
     llvm::ModulePass(ID),
-    Kernel(::Kernel != "" ? ::Kernel : Kernel) { }
+    Kernel(GetKernelOption(Kernel)) { }
 
 public:
   virtual bool runOnModule(llvm::Module &Mod);
