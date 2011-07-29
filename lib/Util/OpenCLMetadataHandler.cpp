@@ -4,6 +4,7 @@
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Constants.h"
 #include "llvm/Support/ErrorHandling.h"
 
@@ -137,8 +138,9 @@ private:
 //
 
 OpenCLMetadataHandler::OpenCLMetadataHandler(llvm::Module &Mod) : Mod(Mod) {
+  // TODO: replace with oclgen.
   #define BUILTIN(N, S) \
-    Builtins[N] = S;
+    Builtins["__builtin_ocl_" N] = S;
   #include "opencrun/Util/Builtins.def"
   #undef BUILTIN
 }
@@ -202,21 +204,25 @@ OpenCLMetadataHandler::GetArgAddressSpace(llvm::Function &Kern, unsigned I) {
 }
 
 llvm::Function *OpenCLMetadataHandler::GetBuiltin(llvm::StringRef Name) {
+  // Mangle the name.
+  llvm::SmallString<32> MangledName("__builtin_ocl_");
+  MangledName += Name;
+
   // Function is not a built-in.
-  if(!Builtins.count(Name)) {
+  if(!Builtins.count(MangledName)) {
     std::string ErrMsg = "Unknown builtin: ";
     ErrMsg += Name;
 
     llvm_unreachable(ErrMsg.c_str());
   }
 
-  llvm::Function *Func = Mod.getFunction(Name);
+  llvm::Function *Func = Mod.getFunction(MangledName);
 
   // Built-in declaration found inside the module.
   if(Func) {
-    if(!HasRightSignature(Func, Builtins[Name])) {
+    if(!HasRightSignature(Func, Builtins[MangledName])) {
       std::string ErrMsg = "Malformed builtin declaration: ";
-      ErrMsg += Name;
+      ErrMsg += MangledName;
 
       llvm_unreachable(ErrMsg.c_str());
     }
@@ -224,7 +230,7 @@ llvm::Function *OpenCLMetadataHandler::GetBuiltin(llvm::StringRef Name) {
 
   // Built-in not found in the module, create it.
   else
-    Func = BuildBuiltin(Name, Builtins[Name]);
+    Func = BuildBuiltin(MangledName, Builtins[MangledName]);
 
   return Func;
 }

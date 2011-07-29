@@ -48,6 +48,9 @@ private:
   void EmitWorkItemDecls(raw_ostream &OS);
   void EmitSynchronizationDecls(raw_ostream &OS);
   void EmitMacros(raw_ostream &OS);
+  void EmitWorkItemRewritingMacros(raw_ostream &OS);
+  void EmitSynchronizationRewritingMacros(raw_ostream &OS);
+  void EmitBuiltinRewritingMacro(raw_ostream &OS, OCLLibBuiltin &Blt);
 };
 
 } // End namespace llvm.

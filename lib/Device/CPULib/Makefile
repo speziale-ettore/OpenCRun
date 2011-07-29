@@ -24,7 +24,7 @@ BUILT_SOURCES = Math.inc
 #
 # The LLVM build system does not known recognize .cl files automatically.
 #
-SOURCES = WorkItem.cl Math.cl
+SOURCES = WorkItem.cl Synchronization.cl Math.cl
 
 #
 # Include Makefile.common so we know what to do.

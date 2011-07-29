@@ -23,7 +23,7 @@ void OCLLibEmitter::EmitHeader(raw_ostream &OS, OCLLibBuiltin &Blt, unsigned Spe
   OS << Blt.GetReturnType(SpecID) << " ";
 
   // Emit name.
-  OS << Blt.GetName();
+  OS << "__builtin_ocl_" << Blt.GetName();
 
   // Emit arguments.
   OS << "(";
@@ -82,7 +82,7 @@ void OCLLibImplEmitter::EmitImplementation(raw_ostream &OS,
     for(unsigned I = 0, E = RetTy->GetWidth(); I != E; ++I) {
       // The i-th call writes the i-th element of the return value.
       OS.indent(2);
-      OS << "RawRetValue[" << I << "] = " << Blt.GetName();
+      OS << "RawRetValue[" << I << "] = " << "__builtin_ocl_" + Blt.GetName();
       OS << "(";
 
       // Push arguments.
@@ -166,6 +166,9 @@ void OCLDefEmitter::run(raw_ostream &OS) {
 
   EmitMacros(OS);
 
+  EmitWorkItemRewritingMacros(OS);
+  EmitSynchronizationRewritingMacros(OS);
+
   // Emit generic definitions.
   OS << "\n/* BEGIN AUTO-GENERATED PROTOTYPES */\n";
   for(OCLBuiltinContainer::iterator I = Blts.begin(),
@@ -180,6 +183,16 @@ void OCLDefEmitter::run(raw_ostream &OS) {
     OS << "\n";
   }
   OS << "\n/* END AUTO-GENERATED PROTOTYPES */\n";
+
+  // Emit builtin rewriting macros.
+  OS << "\n/* BEGIN AUTO-GENERATED BUILTIN MACROS */\n"
+     << "\n";
+  for(OCLBuiltinContainer::iterator I = Blts.begin(),
+                                    E = Blts.end();
+                                    I != E;
+                                    ++I)
+    EmitBuiltinRewritingMacro(OS, *I);
+  OS << "\n/* END AUTO-GENERATED BUILTIN MACROS */\n";
 
   // Emit C++ closing guard.
   OS << "\n"
@@ -237,21 +250,21 @@ void OCLDefEmitter::EmitWorkItemDecls(raw_ostream &OS) {
   OS << "\n"
      << "/* Work-Item Functions */\n"
      << "\n"
-     << "uint get_work_dim();\n"
-     << "size_t get_global_size(uint dimindx);\n"
-     << "size_t get_global_id(uint dimindx);\n"
-     << "size_t get_local_size(uint dimindx);\n"
-     << "size_t get_local_id(uint dimindx);\n"
-     << "size_t get_num_groups(uint dimindx);\n"
-     << "size_t get_group_id(uint dimindx);\n"
-     << "size_t get_global_offset(uint dimindx);\n";
+     << "uint __builtin_ocl_get_work_dim();\n"
+     << "size_t __builtin_ocl_get_global_size(uint dimindx);\n"
+     << "size_t __builtin_ocl_get_global_id(uint dimindx);\n"
+     << "size_t __builtin_ocl_get_local_size(uint dimindx);\n"
+     << "size_t __builtin_ocl_get_local_id(uint dimindx);\n"
+     << "size_t __builtin_ocl_get_num_groups(uint dimindx);\n"
+     << "size_t __builtin_ocl_get_group_id(uint dimindx);\n"
+     << "size_t __builtin_ocl_get_global_offset(uint dimindx);\n";
 }
 
 void OCLDefEmitter::EmitSynchronizationDecls(raw_ostream &OS) {
   OS << "\n"
      << "/* Synchronization Functions */\n"
      << "\n"
-     << "void barrier(cl_mem_fence_flags flags);\n";
+     << "void __builtin_ocl_barrier(cl_mem_fence_flags flags);\n";
 }
 
 void OCLDefEmitter::EmitMacros(raw_ostream &OS) {
@@ -282,4 +295,32 @@ void OCLDefEmitter::EmitMacros(raw_ostream &OS) {
      << "/* Synchronization Macros*/\n"
      << "#define CLK_LOCAL_MEM_FENCE  0\n"
      << "#define CLK_GLOBAL_MEM_FENCE 1\n";
+}
+
+void OCLDefEmitter::EmitWorkItemRewritingMacros(raw_ostream &OS) {
+  OS << "\n"
+     << "/* Work-Item Rewriting Macros */\n"
+     << "\n"
+     << "#define get_work_dim __builtin_ocl_get_work_dim\n"
+     << "#define get_global_size __builtin_ocl_get_global_size\n"
+     << "#define get_global_id __builtin_ocl_get_global_id\n"
+     << "#define get_local_size __builtin_ocl_get_local_size\n"
+     << "#define get_local_id __builtin_ocl_get_local_id\n"
+     << "#define get_num_groups __builtin_ocl_get_num_groups\n"
+     << "#define get_group_id __builtin_ocl_get_group_id\n"
+     << "#define get_global_offset __builtin_ocl_get_global_offset\n";
+}
+
+void OCLDefEmitter::EmitSynchronizationRewritingMacros(raw_ostream &OS) {
+  OS << "\n"
+     << "/* Synchronization Rewriting Macros */\n"
+     << "\n"
+     << "#define barrier __builtin_ocl_barrier\n";
+}
+
+void OCLDefEmitter::EmitBuiltinRewritingMacro(raw_ostream &OS,
+                                              OCLLibBuiltin &Blt) {
+  OS << "#define " << Blt.GetName() << " "
+                   << "__builtin_ocl_" << Blt.GetName()
+                   << "\n";
 }
