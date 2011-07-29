@@ -1,6 +1,12 @@
 
 SUFFIXES = .cl
 
+#
+# We assume clang is downloaded under llvm tools directory.
+#
+CPP.Flags += -I$(LLVM_SRC_ROOT)/tools/clang/include \
+             -I$(LLVM_OBJ_ROOT)/tools/clang/include
+
 OCLGEN = $(ToolDir)/oclgen
 
 BCCompile.OCL = $(LLVMCC) $(CPP.Flags) $(C.Flags) $(CFLAGS) $(CPPFLAGS) \
