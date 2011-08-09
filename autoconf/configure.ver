@@ -1,7 +1,7 @@
 dnl **************************************************************************
 dnl * Initialize
 dnl **************************************************************************
-AC_INIT([[[OPENCRUN]]],[[[0.1]]],[speziale.ettore@gmail.com])
+AC_INIT([OPENCRUN],[0.1],[speziale.ettore@gmail.com])
 
 dnl Identify where LLVM source tree is
 LLVM_SRC_ROOT="../../.."
@@ -26,6 +26,11 @@ dnl List every Makefile that exists within your source tree
 AC_CONFIG_MAKEFILE(Makefile)
 AC_CONFIG_MAKEFILE(Makefile.common)
 AC_CONFIG_MAKEFILE(lib/Makefile)
+AC_CONFIG_MAKEFILE(test/Makefile)
+AC_CONFIG_MAKEFILE(test/Makefile.tests)
+AC_CONFIG_MAKEFILE(tools/Makefile)
+AC_CONFIG_MAKEFILE(unittests/Makefile)
+AC_CONFIG_MAKEFILE(utils/Makefile)
 
 dnl **************************************************************************
 dnl * Determine which system we are building on
