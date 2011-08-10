@@ -18,6 +18,23 @@ STATISTIC(GroupParallelStubs, "Number of CPU group parallel stubs created");
 
 namespace {
 
+//===----------------------------------------------------------------------===//
+/// GroupParallelStub - Builds stubs to invoke OpenCL kernels from inside the
+///  CPU runtime. The CPU runtime stores kernel arguments inside an array of
+///  pointers. To correctly invoke the kernel, it is needed to unpack arguments
+///  from the array. Each array element is a pointer. If the i-th kernel
+///  parameter is a buffer, then the pointer directly points to it. If it is a
+///  a value type, then it points to the value supplied by the user -- it must
+///  be passed by copy to the kernel.
+///
+///  Example for void foo(int a, global int *b):
+///
+///  args: [ int * ][ int *]
+///          |        |
+///          |        +-> b: [ int ] ... [ int ]
+///          |
+///          +-> a: [ int ]
+//===----------------------------------------------------------------------===//
 class GroupParallelStub : public llvm::ModulePass {
 public:
   static char ID;
@@ -29,10 +46,6 @@ public:
 
 public:
   virtual bool runOnModule(llvm::Module &Mod);
-
-  virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const {
-    // TODO: correctly set AU.
-  }
 
   virtual const char *getPassName() const {
     return "Group parallel stub builder";
@@ -109,10 +122,14 @@ bool GroupParallelStub::BuildStub(llvm::Function &Kern) {
     // Get J-th element address.
     llvm::Value *J = llvm::ConstantInt::get(llvm::Type::getInt32Ty(Ctx),
                                             I->getArgNo());
-    llvm::GetElementPtrInst *Addr = llvm::GetElementPtrInst::Create(Arg,
-                                                                    J,
-                                                                    "",
-                                                                    Entry);
+    llvm::Value *Addr = llvm::GetElementPtrInst::Create(Arg, J, "", Entry);
+
+    // Get its type.
+    llvm::Type *ArgTy = I->getType();
+
+    // If it is passed by value, then we have to do an extra load.
+    if(!ArgTy->isPointerTy())
+      Addr = new llvm::LoadInst(Addr, "", Entry);
 
     // Cast to the appropriate type.
     llvm::Type *ArgPtrTy = llvm::PointerType::getUnqual(I->getType());
