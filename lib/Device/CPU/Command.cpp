@@ -21,16 +21,29 @@ NDRangeKernelBlockCPUCommand::NDRangeKernelBlockCPUCommand(
   End(E) {
   Kernel &Kern = GetKernel();
 
+  // Hold arguments to be passed to stubs.
   Args = static_cast<void **>(sys::CAlloc(Kern.GetArgCount(), sizeof(void *)));
 
-  // Setup references to global and constant memory.
-  for(ArgsMappings::iterator I = GlobalArgs.begin(),
-                             E = GlobalArgs.end();
-                             I != E;
-                             ++I)
-    Args[I->first] = I->second;
+  // We can start filling some arguments: global/constant buffers and arguments
+  // passed by value.
+  unsigned J = 0;
+  for(Kernel::arg_iterator I = Kern.arg_begin(),
+                           E = Kern.arg_end();
+                           I != E;
+                           ++I) {
+    // A buffer can be allocated by the CPUDevice.
+    if(BufferKernelArg *Arg = llvm::dyn_cast<BufferKernelArg>(*I)) {
+      // Only global and constant buffers are handled here. Local buffers are
+      // handled later.
+      if(Arg->OnGlobalAddressSpace() || Arg->OnConstantAddressSpace())
+        Args[J] = GlobalArgs[J];
 
-  // TODO: setup by-copy parameters.
+    // For arguments passed by copy, we need to setup a pointer for the stub.
+    } else if(ByValueKernelArg *Arg = llvm::dyn_cast<ByValueKernelArg>(*I))
+      Args[J] = Arg->GetArg();
+
+    ++J;
+  }
 }
 
 NDRangeKernelBlockCPUCommand::~NDRangeKernelBlockCPUCommand() {

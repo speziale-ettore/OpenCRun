@@ -8,6 +8,6 @@ LEVEL = ..
 #
 # List all of the subdirectories that we will compile.
 #
-PARALLEL_DIRS = Skel Library
+PARALLEL_DIRS = Skel Runtime Library
 
 include $(LEVEL)/Makefile.common

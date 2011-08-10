@@ -37,11 +37,13 @@ cl_int Kernel::SetArg(unsigned I, size_t Size, const void *Arg) {
   if(IsBuffer(*ArgTy))
     return SetBufferArg(I, Size, Arg);
 
+  else if(IsByValue(*ArgTy))
+    return SetByValueArg(I, Size, Arg);
+
   llvm_unreachable("Unknown argument type");
 }
 
 cl_int Kernel::SetBufferArg(unsigned I, size_t Size, const void *Arg) {
-
   if(Size != sizeof(cl_mem))
     RETURN_WITH_ERROR(CL_INVALID_ARG_SIZE,
                       "kernel argument size does not match");
@@ -67,6 +69,18 @@ cl_int Kernel::SetBufferArg(unsigned I, size_t Size, const void *Arg) {
   return CL_SUCCESS;
 }
 
+cl_int Kernel::SetByValueArg(unsigned I, size_t Size, const void *Arg) {
+  // We cannot check Size with respect to the size of Arg on the host, because
+  // we cannot known the size of the type on the host -- we cannot a type
+  // declared on the device domain with one declared on the host domain. Trust
+  // the user!
+  ThisLock.acquire();
+  Arguments[I] = new ByValueKernelArg(I, Arg, Size);
+  ThisLock.release();
+
+  return CL_SUCCESS;
+}
+
 bool Kernel::IsBuffer(llvm::Type &Ty) {
   if(llvm::PointerType *PointerTy = llvm::dyn_cast<llvm::PointerType>(&Ty)) {
     llvm::Type *PointeeTy = PointerTy->getElementType();
@@ -80,4 +94,15 @@ bool Kernel::IsBuffer(llvm::Type &Ty) {
   }
 
   return false;
+}
+
+bool Kernel::IsByValue(llvm::Type &Ty) {
+  llvm::Type *CheckTy = &Ty;
+
+  if(llvm::isa<llvm::VectorType>(CheckTy))
+    CheckTy = CheckTy->getScalarType();
+
+  return CheckTy->isIntegerTy() ||
+         CheckTy->isFloatTy() ||
+         CheckTy->isDoubleTy();
 }

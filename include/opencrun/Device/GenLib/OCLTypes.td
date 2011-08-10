@@ -45,6 +45,16 @@ multiclass OCLGenericType {
   def _1 : OCLGenType<1>;
 }
 
+// Integer scalar types.
+def ocl_short : OCLScalarType;
+def ocl_int   : OCLScalarType;
+def ocl_long  : OCLScalarType;
+
+// Integer vector types.
+defm ocl_short_v : OCLVectorizableType<ocl_short>;
+defm ocl_int_v   : OCLVectorizableType<ocl_int>;
+defm ocl_long_v  : OCLVectorizableType<ocl_long>;
+
 // Floating point scalar types.
 def ocl_float : OCLScalarType;
 

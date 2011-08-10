@@ -123,8 +123,8 @@ public:
                                           E = Devs.end();
                                           I != E && !Dev();
                                           ++I)
-    if(DeviceTraits<DevTy>::Name == I->getInfo<CL_DEVICE_NAME>())
-      Dev = cl::Device(*I);
+      if(DeviceTraits<DevTy>::Name == I->getInfo<CL_DEVICE_NAME>())
+        Dev = cl::Device(*I);
 
     ASSERT_TRUE(Dev());
 
@@ -250,7 +250,10 @@ protected:
   cl::Context Ctx;
   cl::CommandQueue Queue;
 
-  friend void ::RuntimeFailed<DevTy>(const char *, const void *, size_t, void *);
+  friend void ::RuntimeFailed<DevTy>(const char *,
+                                     const void *,
+                                     size_t,
+                                     void *);
 };
 
 template <typename DevTy, typename Ty>

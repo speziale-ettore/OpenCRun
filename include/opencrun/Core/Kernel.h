@@ -6,6 +6,7 @@
 
 #include "opencrun/Core/MemoryObj.h"
 #include "opencrun/Core/Program.h"
+#include "opencrun/System/OS.h"
 #include "opencrun/Util/MTRefCounted.h"
 
 #include "llvm/DerivedTypes.h"
@@ -18,7 +19,8 @@ namespace opencrun {
 class KernelArg {
 public:
   enum Type {
-    BufferArg
+    BufferArg,
+    ByValueArg
   };
 
 protected:
@@ -48,6 +50,14 @@ public:
 public:
   Buffer *GetBuffer() { return Buf; }
 
+  bool OnGlobalAddressSpace() const {
+    return AddrSpace == clang::LangAS::opencl_global;
+  }
+
+  bool OnConstantAddressSpace() const {
+    return AddrSpace == clang::LangAS::opencl_constant;
+  }
+
   bool OnLocalAddressSpace() const {
     return AddrSpace == clang::LangAS::opencl_local;
   }
@@ -55,6 +65,28 @@ public:
 private:
   Buffer *Buf;
   clang::LangAS::ID AddrSpace;
+};
+
+class ByValueKernelArg : public KernelArg {
+public:
+  static bool classof(const KernelArg *Arg) {
+    return Arg->GetType() == KernelArg::ByValueArg;
+  }
+
+public:
+  ByValueKernelArg(unsigned Position, const void *Arg, size_t Size) :
+    KernelArg(KernelArg::ByValueArg, Position),
+    Size(Size) {
+    this->Arg = sys::Alloc(Size);
+    std::memcpy(this->Arg, Arg, Size);
+  }
+
+public:
+  void *GetArg() { return Arg; }
+
+private:
+  void *Arg;
+  size_t Size;
 };
 
 class Kernel : public _cl_kernel, public MTRefCountedBase<Kernel> {
@@ -136,6 +168,7 @@ private:
   }
 
   cl_int SetBufferArg(unsigned I, size_t Size, const void *Arg);
+  cl_int SetByValueArg(unsigned I, size_t Size, const void *Arg);
 
   clang::LangAS::ID GetArgAddressSpace(unsigned I) {
     // All stored functions share the same signature, use the first.
@@ -148,6 +181,7 @@ private:
   }
 
   bool IsBuffer(llvm::Type &Ty);
+  bool IsByValue(llvm::Type &Ty);
 
 private:
   llvm::sys::Mutex ThisLock;
