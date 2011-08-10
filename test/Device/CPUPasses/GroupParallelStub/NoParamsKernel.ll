@@ -20,9 +20,11 @@ entry:
 
 !opencl.kernels = !{!0}
 !opencl.global_address_space = !{!2}
-!opencl.local_address_space = !{!2}
-!opencl.constant_address_space = !{!2}
+!opencl.local_address_space = !{!3}
+!opencl.constant_address_space = !{!4}
 
 !0 = metadata !{void ()* @foo, metadata !1}
 !1 = metadata !{}
 !2 = metadata !{i32 16776960}
+!3 = metadata !{i32 16776961}
+!4 = metadata !{i32 16776962}
