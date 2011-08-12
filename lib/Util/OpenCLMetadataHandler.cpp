@@ -95,21 +95,15 @@ private:
   }
 
   llvm::Type *GetUIntTy() {
-    return GetIntTy(clang::TargetInfo::UnsignedInt);
+    return llvm::Type::getInt16Ty(Mod.getContext());
   }
 
   llvm::Type *GetULongTy() {
-    return GetIntTy(clang::TargetInfo::UnsignedLong);
+    return llvm::Type::getInt64Ty(Mod.getContext());
   }
 
   llvm::Type *GetSizeTTy() {
-    return GetIntTy(TargetInfo->getSizeType());
-  }
-
-  llvm::Type *GetIntTy(clang::TargetInfo::IntType Ty) {
-    unsigned Width = TargetInfo->getTypeWidth(Ty);
-
-    return llvm::Type::getIntNTy(Mod.getContext(), Width);
+    return llvm::Type::getIntNTy(Mod.getContext(), TargetInfo->getSizeType());
   }
 
   llvm::Type *GetVoidTy() {
