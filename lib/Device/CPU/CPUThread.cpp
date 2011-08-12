@@ -35,8 +35,10 @@ void ResetCurrentThread();
 // management. All symbols should use the C linking convention.
 //
 
-#ifdef __x86_64__
+#if defined(__x86_64__)
 #include "StackX8664.inc"
+#elif defined(__i386__)
+#include "StackX8632.inc"
 #else
 #error "architecture not supported"
 #endif

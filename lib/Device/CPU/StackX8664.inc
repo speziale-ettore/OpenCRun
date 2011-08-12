@@ -89,7 +89,7 @@ void SetWorkItemStackLink(void *Stack, void *PrevStack, size_t Size) {
 }
 
 void RunWorkItems(void *Stack, size_t Size) {
-  uintptr_t StackAddr = (uintptr_t) (Stack);
+  uintptr_t StackAddr = (uintptr_t) Stack;
   
   // Stack grows downward.
   StackAddr += Size - 8;

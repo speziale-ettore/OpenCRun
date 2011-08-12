@@ -71,7 +71,7 @@ TYPED_TEST_P(ArgPassingTest, Vector) {
   HostIn.y = 0;
   HostIn.z = +1;
 
-  cl::Buffer Out = this->AllocReturnBuffer(sizeof(cl_uint16));
+  cl::Buffer Out = this->AllocReturnBuffer(sizeof(cl_int3));
 
   const char *Src = "kernel void copy(global int3 *out,\n"
                     "                 int3 in) {       \n"
@@ -88,7 +88,7 @@ TYPED_TEST_P(ArgPassingTest, Vector) {
                              cl::NullRange,
                              cl::NDRange(1),
                              cl::NDRange(1));
-  Queue.enqueueReadBuffer(Out, true, 0, sizeof(cl_uint16), &HostOut);
+  Queue.enqueueReadBuffer(Out, true, 0, sizeof(cl_int3), &HostOut);
 
   EXPECT_EQ(-1, HostOut.x);
   EXPECT_EQ(0, HostOut.y);

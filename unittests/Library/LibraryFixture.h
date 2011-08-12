@@ -264,8 +264,10 @@ class CPUDev { };
 template <>
 class DeviceTraits<CPUDev> {
 public:
-  #ifdef __x86_64__
+  #if defined(__x86_64__)
   typedef uint64_t SizeType;
+  #elif defined(__i386__)
+  typedef uint32_t SizeType;
   #else
   #error "architecture not supported"
   #endif
