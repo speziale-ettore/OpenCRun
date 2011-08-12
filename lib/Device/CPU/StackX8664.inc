@@ -146,9 +146,14 @@ __asm__ __volatile__(
 "  movq %r14, -32(%rax)\n"
 "  movq %r15, -40(%rax)\n"
 
-// Save stack registers.
+// Save stack registers. Since we do not have a frame for this function, saving
+// rbp is just a simple copy. Saving rsp is more complex, because we will not
+// return from this function using a ret, so we have to manually popping the
+// return address from the stack.
 "  movq %rbp, -48(%rax)\n"
-"  movq %rsp, -56(%rax)\n"
+"  movq %rsp, %rbx\n"
+"  addq $8, %rbx\n"
+"  movq %rbx, -56(%rax)\n"
 
 // Save return address.
 "  movq (%rsp), %rbx\n"
