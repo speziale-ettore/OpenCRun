@@ -5,7 +5,7 @@
 using namespace opencrun;
 using namespace opencrun::cpu;
 
-uint opencrun::cpu::GetWorkDim() {
+cl_uint opencrun::cpu::GetWorkDim() {
   CPUThread &Thr = GetCurrentThread();
   const DimensionInfo::iterator &Cur = Thr.GetCurrentIndex();
 
@@ -47,14 +47,14 @@ size_t opencrun::cpu::GetNumGroups(cl_uint I) {
   return Cur.GetWorkGroupsCount(I);
 }
 
-size_t opencrun::cpu::GetGroupId(uint I) {
+size_t opencrun::cpu::GetGroupId(cl_uint I) {
   CPUThread &Thr = GetCurrentThread();
   const DimensionInfo::iterator &Cur = Thr.GetCurrentIndex();
 
   return Cur.GetWorkGroup(I);
 }
 
-size_t opencrun::cpu::GetGlobalOffset(uint I) {
+size_t opencrun::cpu::GetGlobalOffset(cl_uint I) {
   CPUThread &Thr = GetCurrentThread();
   const DimensionInfo::iterator &Cur = Thr.GetCurrentIndex();
 

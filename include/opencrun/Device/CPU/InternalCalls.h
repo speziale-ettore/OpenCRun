@@ -20,14 +20,14 @@ namespace opencrun {
 namespace cpu {
 
 // Work-Item Functions.
-uint GetWorkDim();
+cl_uint GetWorkDim();
 size_t GetGlobalSize(cl_uint I);
 size_t GetGlobalId(cl_uint I);
 size_t GetLocalSize(cl_uint I);
 size_t GetLocalId(cl_uint I);
 size_t GetNumGroups(cl_uint I);
-size_t GetGroupId(uint I);
-size_t GetGlobalOffset(uint I);
+size_t GetGroupId(cl_uint I);
+size_t GetGlobalOffset(cl_uint I);
 
 // Synchronization Functions.
 void Barrier(cl_mem_fence_flags Flags);
