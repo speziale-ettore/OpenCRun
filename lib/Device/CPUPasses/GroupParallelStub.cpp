@@ -100,10 +100,11 @@ bool GroupParallelStub::BuildStub(llvm::Function &Kern) {
   llvm::FunctionType *StubTy = llvm::FunctionType::get(RetTy, ArgTy, false);
 
   // Create the stub.
-  llvm::Function *Stub = llvm::Function::Create(StubTy,
-                                                llvm::Function::ExternalLinkage,
-                                                MangleKernelName(Kern.getName()),
-                                                Mod);
+  llvm::Function *Stub;
+  Stub = llvm::Function::Create(StubTy,
+                                llvm::Function::ExternalLinkage,
+                                MangleKernelName(Kern.getName()),
+                                Mod);
 
   // Set argument name.
   llvm::Argument *Arg = Stub->arg_begin();

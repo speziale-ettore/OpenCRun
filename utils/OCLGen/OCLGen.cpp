@@ -65,11 +65,13 @@ namespace {
         cl::value_desc("class name"));
 
   cl::opt<std::string>
-  OutputFilename("o", cl::desc("Output filename"), cl::value_desc("filename"),
+  OutputFilename("o", cl::desc("Output filename"),
+                 cl::value_desc("filename"),
                  cl::init("-"));
 
   cl::opt<std::string>
-  DependFilename("d", cl::desc("Dependency filename"), cl::value_desc("filename"),
+  DependFilename("d", cl::desc("Dependency filename"),
+                 cl::value_desc("filename"),
                  cl::init(""));
 
   cl::opt<std::string>
@@ -90,7 +92,8 @@ int main(int argc, char *argv[]) {
   try {
     // Parse the input file.
     OwningPtr<MemoryBuffer> File;
-    if (error_code ec = MemoryBuffer::getFileOrSTDIN(InputFilename.c_str(), File)) {
+    if (error_code ec = MemoryBuffer::getFileOrSTDIN(InputFilename.c_str(),
+                                                     File)) {
       errs() << "Could not open input file '" << InputFilename << "': "
              << ec.message() << "\n";
       return 1;

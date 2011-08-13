@@ -141,7 +141,8 @@ CommandBuilder &CommandBuilder::SetWaitList(unsigned N, const cl_event *Evs) {
     return NotifyError(CL_INVALID_EVENT_WAIT_LIST, "expected events wait list");
 
   if(!N && Evs)
-    return NotifyError(CL_INVALID_EVENT_WAIT_LIST, "unexpected events wait list");
+    return NotifyError(CL_INVALID_EVENT_WAIT_LIST,
+                       "unexpected events wait list");
 
   for(unsigned I = 0; I < N; ++I) {
     if(!Evs[I])

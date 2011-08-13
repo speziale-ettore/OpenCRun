@@ -20,8 +20,9 @@ ifndef DISABLE_AUTO_DEPENDENCIES
 $(ObjDir)/%.ll: %.cl $(ObjDir)/.dir $(BUILT_SOURCES) $(LLVMCXX)
 	$(Echo) "Compiling $*.cl for $(BuildMode) build (bytecode)"
 	$(Verb) if $(BCCompile.OCL) $(BC_DEPEND_OPTIONS) \
-                        $< -o $(ObjDir)/$*.ll -S $(LLVMCC_EMITIR_FLAG) ; \
-                $(BC_DEPEND_MOVEFILE)
+	                            $(LLVMCC_EMITIR_FLAG) \
+                                    $< -o $(ObjDir)/$*.ll -S; \
+                  $(BC_DEPEND_MOVEFILE)
 
 # Provide alternate rule sets if dependencies are disabled.
 else
@@ -31,3 +32,41 @@ $(ObjDir)/%.ll: %.cl $(ObjDir)/.dir $(BUILT_SOURCES) $(LLVMCXX)
 	$(BCCompile.OCL) $< -o $@ -S $(LLVMCC_EMITIR_FLAG)
 
 endif
+
+check-format::
+	$(Verb) for dir in $(DIRS); do \
+	          ($(MAKE) -C $$dir $@) || exit 1; \
+	        done
+
+check-format:: check-line-length-local check-for-tabs-local
+
+RED_COLOR = '\033[1;31m'
+RESET_COLOR = '\033[0m'
+
+check-line-length-local:
+	$(Echo) "Searching for overlength lines"
+	$(Verb) for file in $(Sources); do \
+	          src=$(PROJ_SRC_DIR)/$$file; \
+	          if [ -f $$src ]; then \
+		    awk -v file=$$file \
+		        -v red_c=$(RED_COLOR) \
+			-v reset_c=$(RESET_COLOR) \
+			'/.{81}/ { printf("%s%s:%d:%s%s\n", \
+			                  red_c, file ,NR, reset_c, $$0) }' \
+			$$src; \
+		  fi; \
+		done
+
+check-for-tabs-local:
+	$(Echo) "Searching for tabs"
+	$(Verb) for file in $(Sources); do \
+	          src=$(PROJ_SRC_DIR)/$$file; \
+	          if [ -f $$src ]; then \
+		    awk -v file=$$file \
+		        -v red_c=$(RED_COLOR) \
+			-v reset_c=$(RESET_COLOR) \
+			'/\t/ { printf("%s%s:%d:%s%s\n", \
+                                       red_c, file ,NR, reset_c, $$0) }' \
+			$$src; \
+		  fi; \
+		done

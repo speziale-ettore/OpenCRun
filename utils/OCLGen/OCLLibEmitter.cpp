@@ -9,7 +9,9 @@ using namespace llvm;
 // OCLLibEmitter implementation.
 //
 
-void OCLLibEmitter::EmitHeader(raw_ostream &OS, OCLLibBuiltin &Blt, unsigned SpecID) {
+void OCLLibEmitter::EmitHeader(raw_ostream &OS,
+                               OCLLibBuiltin &Blt,
+                               unsigned SpecID) {
   // Emit attributes.
   OS << "__attribute__((";
   for(unsigned I = 0, E = Blt.GetAttributesCount(); I != E; ++I) {
