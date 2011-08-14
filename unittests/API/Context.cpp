@@ -73,3 +73,12 @@ TEST_F(ContextTest, FromDeviceList) {
   EXPECT_EQ(DefaultProps[1], Props[1]);
   EXPECT_EQ(DefaultProps[2], Props[2]);
 }
+
+TEST_F(ContextTest, NullPropertiesNotSupported) {
+  cl::Device Dev = GetDevice();
+  cl_int ErrCode;
+
+  cl::Context Ctx(std::vector<cl::Device>(1, Dev), NULL, NULL, NULL, &ErrCode);
+
+  EXPECT_EQ(CL_INVALID_PLATFORM, ErrCode);
+}
