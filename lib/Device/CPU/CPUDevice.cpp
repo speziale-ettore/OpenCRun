@@ -367,7 +367,6 @@ bool CPUDevice::BlockParallelSubmit(EnqueueNDRangeKernel &Cmd,
   DimensionInfo &DimInfo = Cmd.GetDimensionInfo();
 
   // Decide the work group size.
-  // TODO: map to L1 size.
   if(!Cmd.IsLocalWorkGroupSizeSpecified()) {
     llvm::SmallVector<size_t, 4> Sizes;
 

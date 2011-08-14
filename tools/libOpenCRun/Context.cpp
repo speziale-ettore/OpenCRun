@@ -123,6 +123,35 @@ clGetContextInfo(cl_context context,
   #include "ContextProperties.def"
   #undef PROPERTY
 
+  case CL_CONTEXT_DEVICES:
+    return clFillValue<cl_device_id, opencrun::Context::device_iterator>(
+             static_cast<cl_device_id *>(param_value),
+             Ctx.device_begin(),
+             Ctx.device_end(),
+             param_value_size,
+             param_value_size_ret);
+
+  // Currently we do no support custom properties. The standard prescribes that
+  // when the context was created with a NULL properties list we can either set
+  // param_value_size_ret to 0 or return a list containing only the terminator.
+  // However, since OpenCL runtime will be managed through the ICD, we cannot
+  // create a context with a NULL properties list, so always return the default
+  // properties list here.
+  case CL_CONTEXT_PROPERTIES: {
+    opencrun::Platform &Plat = opencrun::GetOpenCRunPlatform();
+    cl_context_properties Props[] =
+      { CL_CONTEXT_PLATFORM,
+        reinterpret_cast<cl_context_properties>(&Plat),
+        0
+      };
+    return clFillValue<cl_context_properties, cl_context_properties *>(
+             static_cast<cl_context_properties *>(param_value),
+             Props,
+             Props + 3,
+             param_value_size,
+             param_value_size_ret);
+  }
+
   default:
     return CL_INVALID_VALUE;
   }

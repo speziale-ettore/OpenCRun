@@ -1,4 +1,4 @@
-##===- unittests/Runtime/Makefile --------------------------*- Makefile -*-===##
+##===- unittests/API/Makefile ------------------------------*- Makefile -*-===##
 
 #
 # Relative path to the top of the source tree.
@@ -8,7 +8,7 @@ LEVEL = ../..
 #
 # Name of the test.
 #
-TESTNAME = Runtime
+TESTNAME = API
 
 LINK_COMPONENTS = support
 

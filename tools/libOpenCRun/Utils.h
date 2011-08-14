@@ -36,6 +36,7 @@ ParamTy clReadValue(FunTy Src) {
   PARAM_TY clReadValue<PARAM_TY, FUN_TY &>(FUN_TY &Src) { \
     return &Src;                                          \
   }
+
 CL_OBJECT_READ_VALUE(cl_device_id, opencrun::Device)
 CL_OBJECT_READ_VALUE(cl_context, opencrun::Context)
 CL_OBJECT_READ_VALUE(cl_platform_id, opencrun::Platform)
@@ -97,6 +98,28 @@ cl_int clFillValue<size_t, opencrun::DeviceInfo::MaxWorkItemSizesContainer &>(
       return CL_INVALID_VALUE;
 
     std::copy(Src.begin(), Src.end(), Dst);
+  }
+
+  return CL_SUCCESS;
+}
+
+template <typename ParamTy, typename Iter>
+cl_int clFillValue(ParamTy *Dst,
+                   Iter I,
+                   Iter E,
+                   size_t DstSize,
+                   size_t *RightSizeRet) {
+  size_t RightSize = (E - I) * sizeof(ParamTy);
+
+  if(RightSizeRet)
+    *RightSizeRet = RightSize;
+
+  if(Dst) {
+    if(DstSize < RightSize)
+      return CL_INVALID_VALUE;
+
+    for(; I != E; ++I)
+      *(Dst++) = clReadValue<ParamTy, __typeof__(*I)>(*I);
   }
 
   return CL_SUCCESS;
