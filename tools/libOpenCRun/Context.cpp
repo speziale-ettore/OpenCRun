@@ -8,6 +8,27 @@
 
 #include <map>
 
+#define CL_DEVICE_TYPE_ALL_INTERNAL \
+  (CL_DEVICE_TYPE_CPU |             \
+   CL_DEVICE_TYPE_GPU |             \
+   CL_DEVICE_TYPE_ACCELERATOR |     \
+   CL_DEVICE_TYPE_DEFAULT)
+
+static inline bool clValidDeviceType(cl_device_type device_type) {
+  // CL_DEVICE_TYPE_ALL is defined to all 1 bitmask, so it needs a special case.
+  if(device_type == CL_DEVICE_TYPE_ALL)
+    return true;
+
+  // For the same reason, it cannot be used to check via & if device_type is
+  // valid.
+  return !(device_type & ~CL_DEVICE_TYPE_ALL_INTERNAL);
+}
+
+static bool clParseProperties(
+  std::map<cl_context_properties, cl_context_properties> &mappings,
+  const cl_context_properties *properties,
+  cl_int *errcode_ret);
+
 CL_API_ENTRY cl_context CL_API_CALL
 clCreateContext(const cl_context_properties *properties,
                 cl_uint num_devices,
@@ -21,28 +42,11 @@ clCreateContext(const cl_context_properties *properties,
     RETURN_WITH_ERROR(errcode_ret, CL_INVALID_PLATFORM);
 
   std::map<cl_context_properties, cl_context_properties> Props;
-  while(*properties) {
-    cl_context_properties Name = *properties++,
-                          Value = *properties++;
 
-    switch(Name) {
-    case CL_CONTEXT_PLATFORM:
-      if(!reinterpret_cast<cl_platform_id>(Value))
-        RETURN_WITH_ERROR(errcode_ret, CL_INVALID_PLATFORM);
-      break;
+  // Error signalling performed inside clParseProperties.
+  if(!clParseProperties(Props, properties, errcode_ret))
+    return NULL;
 
-    default:
-      RETURN_WITH_ERROR(errcode_ret, CL_INVALID_PROPERTY);
-    }
-
-    if(Props.find(Name) != Props.end())
-      RETURN_WITH_ERROR(errcode_ret, CL_INVALID_PROPERTY);
-
-    Props[Name] = Value;
-  }
-
-  if(Props.find(CL_CONTEXT_PLATFORM) == Props.end())
-    RETURN_WITH_ERROR(errcode_ret, CL_INVALID_PLATFORM);
   opencrun::Platform &Plat = *reinterpret_cast<opencrun::Platform *>(
                                 Props[CL_CONTEXT_PLATFORM]);
 
@@ -77,7 +81,45 @@ clCreateContextFromType(const cl_context_properties *properties,
                                                        void *),
                         void *user_data,
                         cl_int *errcode_ret) CL_API_SUFFIX__VERSION_1_0 {
-  return 0;
+  if(!properties)
+    RETURN_WITH_ERROR(errcode_ret, CL_INVALID_PLATFORM);
+
+  std::map<cl_context_properties, cl_context_properties> Props;
+
+  // Error signalling performed inside clParseProperties.
+  if(!clParseProperties(Props, properties, errcode_ret))
+    return NULL;
+
+  opencrun::Platform &Plat = *reinterpret_cast<opencrun::Platform *>(
+                                Props[CL_CONTEXT_PLATFORM]);
+
+  if(!clValidDeviceType(device_type))
+    RETURN_WITH_ERROR(errcode_ret, CL_INVALID_DEVICE_TYPE);
+
+  if(!pfn_notify && user_data)
+    RETURN_WITH_ERROR(errcode_ret, CL_INVALID_VALUE);
+
+  opencrun::ContextErrCallbackClojure Callback(pfn_notify, user_data);
+
+  opencrun::Context::DevicesContainer Devs;
+
+  if(device_type & CL_DEVICE_TYPE_CPU || device_type & CL_DEVICE_TYPE_DEFAULT)
+    Devs.append(Plat.cpu_begin(), Plat.cpu_end());
+  else if(device_type & CL_DEVICE_TYPE_GPU)
+    Devs.append(Plat.gpu_begin(), Plat.gpu_end());
+  else if(device_type & CL_DEVICE_TYPE_ACCELERATOR)
+    Devs.append(Plat.accelerator_begin(), Plat.accelerator_end());
+
+  if(Devs.empty())
+    RETURN_WITH_ERROR(errcode_ret, CL_DEVICE_NOT_FOUND);
+
+  if(errcode_ret)
+    *errcode_ret = CL_SUCCESS;
+
+  opencrun::Context *Ctx = new opencrun::Context(Plat, Devs, Callback);
+  Ctx->Retain();
+
+  return Ctx;
 }
 
 CL_API_ENTRY cl_int CL_API_CALL
@@ -155,4 +197,34 @@ clGetContextInfo(cl_context context,
   default:
     return CL_INVALID_VALUE;
   }
+}
+
+static bool clParseProperties(
+  std::map<cl_context_properties, cl_context_properties> &mappings,
+  const cl_context_properties *properties,
+  cl_int *errcode_ret) {
+  while(*properties) {
+    cl_context_properties Name = *properties++,
+                          Value = *properties++;
+
+    switch(Name) {
+    case CL_CONTEXT_PLATFORM:
+      if(!reinterpret_cast<cl_platform_id>(Value))
+        RETURN_WITH_FLAG(errcode_ret, CL_INVALID_PLATFORM);
+      break;
+
+    default:
+      RETURN_WITH_FLAG(errcode_ret, CL_INVALID_PROPERTY);
+    }
+
+    if(mappings.find(Name) != mappings.end())
+      RETURN_WITH_FLAG(errcode_ret, CL_INVALID_PROPERTY);
+
+    mappings[Name] = Value;
+  }
+
+  if(mappings.find(CL_CONTEXT_PLATFORM) == mappings.end())
+    RETURN_WITH_FLAG(errcode_ret, CL_INVALID_PLATFORM);
+
+  return true;
 }

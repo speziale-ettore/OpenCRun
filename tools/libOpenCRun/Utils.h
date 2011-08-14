@@ -17,6 +17,13 @@
   return NULL;                          \
   }
 
+#define RETURN_WITH_FLAG(VAR, ERRCODE) \
+  {                                    \
+  if(VAR)                              \
+    *VAR = ERRCODE;                    \
+  return false;                        \
+  }
+
 #define RETURN_WITH_EVENT(VAR, EV) \
   {                                \
   if(VAR)                          \

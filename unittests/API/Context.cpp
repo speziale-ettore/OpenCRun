@@ -74,11 +74,31 @@ TEST_F(ContextTest, FromDeviceList) {
   EXPECT_EQ(DefaultProps[2], Props[2]);
 }
 
+TEST_F(ContextTest, FromDeviceType) {
+  cl_context_properties *DefaultProps = GetProps();
+
+  // Setup the filter on the CPU device -- it is the only device always
+  // available.
+  cl::Context Ctx(CL_DEVICE_TYPE_CPU, DefaultProps);
+
+  std::vector<cl::Device> Devs = Ctx.getInfo<CL_CONTEXT_DEVICES>();
+
+  // 1) Workaround for silence a googletest warning.
+  // 2) The CPU device is the default device in OpenCRun.
+  cl_device_type ExpectedDevTy = CL_DEVICE_TYPE_CPU | CL_DEVICE_TYPE_DEFAULT;
+
+  EXPECT_EQ(1u, Ctx.getInfo<CL_CONTEXT_NUM_DEVICES>());
+  EXPECT_EQ(1u, Devs.size());
+  EXPECT_EQ(ExpectedDevTy, Devs[0].getInfo<CL_DEVICE_TYPE>());
+}
+
 TEST_F(ContextTest, NullPropertiesNotSupported) {
-  cl::Device Dev = GetDevice();
-  cl_int ErrCode;
+  std::vector<cl::Device> Devs(1, GetDevice());
+  cl_int ErrCodeA, ErrCodeB;
 
-  cl::Context Ctx(std::vector<cl::Device>(1, Dev), NULL, NULL, NULL, &ErrCode);
+  cl::Context CtxA(Devs, NULL, NULL, NULL, &ErrCodeA);
+  cl::Context CtxB(Devs, NULL, NULL, NULL, &ErrCodeB);
 
-  EXPECT_EQ(CL_INVALID_PLATFORM, ErrCode);
+  EXPECT_EQ(CL_INVALID_PLATFORM, ErrCodeA);
+  EXPECT_EQ(CL_INVALID_PLATFORM, ErrCodeB);
 }
