@@ -490,6 +490,18 @@ size_t Hardware::GetCacheLineSize() {
   return I != E ? I->GetLineSize() : 0;
 }
 
+size_t Hardware::GetMaxNaturalAlignment() {
+  size_t Alignment;
+
+  #if defined(__x86_64__) || defined(__i386__)
+  Alignment = 16;
+  #else
+  #error "architecture not supported"
+  #endif
+
+  return Alignment;
+}
+
 Hardware::Hardware() {
   Hardware::CPUComponents CPUs;
   Hardware::CacheComponents Caches;

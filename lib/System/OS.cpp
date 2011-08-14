@@ -31,6 +31,16 @@ void *opencrun::sys::CacheAlignedAlloc(size_t Size, size_t &AllocSize) {
   return Addr;
 }
 
+void *opencrun::sys::NaturalAlignedAlloc(size_t Size) {
+  size_t MaxNaturalAlignment = Hardware::GetMaxNaturalAlignment();
+  void *Addr;
+
+  if(posix_memalign(&Addr, MaxNaturalAlignment, Size))
+    llvm::report_fatal_error("Unable to allocate natural aligned memory");
+
+  return Addr;
+}
+
 void *opencrun::sys::Alloc(size_t Size) {
   void *Addr = std::malloc(Size);
 

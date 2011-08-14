@@ -77,7 +77,14 @@ public:
   ByValueKernelArg(unsigned Position, const void *Arg, size_t Size) :
     KernelArg(KernelArg::ByValueArg, Position),
     Size(Size) {
-    this->Arg = sys::Alloc(Size);
+    // We need to allocate a chunk of memory for holding the parameter -- it is
+    // passed by copy. Generally speaking, we do not have alignment
+    // requirements. However, the CPU backed generates loads from this memory
+    // location, and since this parameter may be a vector type we can incur into
+    // alignment hazards! Force using the maximum natural alignment.
+    this->Arg = sys::NaturalAlignedAlloc(Size);
+
+    // Copy the parameter.
     std::memcpy(this->Arg, Arg, Size);
   }
 

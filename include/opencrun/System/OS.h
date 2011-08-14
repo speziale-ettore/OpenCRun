@@ -9,6 +9,7 @@ namespace sys {
 
 void *PageAlignedAlloc(size_t Size);
 void *CacheAlignedAlloc(size_t Size, size_t &AllocSize);
+void *NaturalAlignedAlloc(size_t Size);
 
 void *Alloc(size_t Size);
 void *CAlloc(size_t N, size_t Size);

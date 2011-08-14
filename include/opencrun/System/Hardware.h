@@ -346,6 +346,7 @@ class Hardware {
 public:
   static size_t GetPageSize();
   static size_t GetCacheLineSize();
+  static size_t GetMaxNaturalAlignment();
 
 public:
   typedef std::set<HardwareComponent *> ComponentContainer;
