@@ -44,9 +44,10 @@ ParamTy clReadValue(FunTy Src) {
     return &Src;                                          \
   }
 
+CL_OBJECT_READ_VALUE(cl_platform_id, opencrun::Platform)
 CL_OBJECT_READ_VALUE(cl_device_id, opencrun::Device)
 CL_OBJECT_READ_VALUE(cl_context, opencrun::Context)
-CL_OBJECT_READ_VALUE(cl_platform_id, opencrun::Platform)
+CL_OBJECT_READ_VALUE(cl_program, opencrun::Program)
 #undef CL_OBJECT_READ_VALUE
 
 template <typename ParamTy, typename FunTy>

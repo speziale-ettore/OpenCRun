@@ -79,8 +79,23 @@ clGetKernelInfo(cl_kernel kernel,
                 size_t param_value_size,
                 void *param_value,
                 size_t *param_value_size_ret) CL_API_SUFFIX__VERSION_1_0 {
-  llvm_unreachable("Not yet implemented");
-  return CL_SUCCESS;
+  if(!kernel)
+    return CL_INVALID_KERNEL;
+
+  opencrun::Kernel &Kern = *llvm::cast<opencrun::Kernel>(kernel);
+  switch(param_name) {
+  #define PROPERTY(PARAM, FUN, PARAM_TY, FUN_TY)   \
+  case PARAM:                                      \
+    return clFillValue<PARAM_TY, FUN_TY>(          \
+             static_cast<PARAM_TY *>(param_value), \
+             Kern.FUN(),                           \
+             param_value_size,                     \
+             param_value_size_ret);
+  #include "KernelProperties.def"
+  #undef PROPERTY
+  default:
+    return CL_INVALID_VALUE;
+  }
 }
 
 CL_API_ENTRY cl_int CL_API_CALL

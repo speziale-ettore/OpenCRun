@@ -153,6 +153,7 @@ public:
   }
 
   Context &GetContext() const { return Prog->GetContext(); }
+  Program &GetProgram() const { return *Prog; }
 
   // TODO: implement. Attribute must be gathered from metadata.
   llvm::SmallVector<size_t, 4> &GetRequiredWorkGroupSizes() const {

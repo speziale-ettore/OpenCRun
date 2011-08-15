@@ -1,0 +1,6 @@
+
+PROPERTY(CL_KERNEL_FUNCTION_NAME, GetName, char, llvm::StringRef)
+PROPERTY(CL_KERNEL_NUM_ARGS, GetArgCount, cl_uint, unsigned)
+PROPERTY(CL_KERNEL_REFERENCE_COUNT, GetReferenceCount, cl_uint, unsigned)
+PROPERTY(CL_KERNEL_CONTEXT, GetContext, cl_context, opencrun::Context &)
+PROPERTY(CL_KERNEL_PROGRAM, GetProgram, cl_program, opencrun::Program &)
