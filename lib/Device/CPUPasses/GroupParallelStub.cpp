@@ -1,13 +1,13 @@
 
 #include "opencrun/Device/CPUPasses/AllPasses.h"
 #include "opencrun/Util/OpenCLMetadataHandler.h"
-
-#include "PassUtils.h"
+#include "opencrun/Util/PassOptions.h"
 
 #define DEBUG_TYPE "CPU-group-parallel-stub"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Constants.h"
+#include "llvm/Instructions.h"
 #include "llvm/Module.h"
 #include "llvm/Type.h"
 #include "llvm/DerivedTypes.h"
@@ -80,7 +80,9 @@ bool GroupParallelStub::runOnModule(llvm::Module &Mod) {
                                                   E = MDHandler.kernel_end();
                                                   I != E;
                                                   ++I)
-    Modified = Modified || BuildStub(*I);
+    // Use BuildStub(*I) as first || operand to force evaluation and avoid
+    // short-circuiting by the compiler.
+    Modified = BuildStub(*I) || Modified;
 
   return Modified;
 }
