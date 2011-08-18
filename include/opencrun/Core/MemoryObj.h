@@ -31,7 +31,7 @@ public:
 public:
   static bool classof(const _cl_mem *MemObj) { return true; }
 
-public:
+protected:
   MemoryObj(Type MemTy,
             Context &Ctx,
             size_t Size,
@@ -39,7 +39,9 @@ public:
                                            Ctx(&Ctx),
                                            Size(Size),
                                            AccessProt(AccessProt) { }
-  ~MemoryObj();
+
+public:
+  virtual ~MemoryObj();
 
 public:
   size_t GetSize() const { return Size; }
@@ -123,9 +125,9 @@ public:
   BufferBuilder(Context &Ctx, size_t Size);
 
 public:
-  BufferBuilder &SetUseHostMemory(bool Enabled, void* Storage);
+  BufferBuilder &SetUseHostMemory(bool Enabled, void *Storage);
   BufferBuilder &SetAllocHostMemory(bool Enabled);
-  BufferBuilder &SetCopyHostMemory(bool Enabled, void* Src);
+  BufferBuilder &SetCopyHostMemory(bool Enabled, void *Src);
   BufferBuilder &SetReadWrite(bool Enabled);
   BufferBuilder &SetWriteOnly(bool Enabled);
   BufferBuilder &SetReadOnly(bool Enabled);

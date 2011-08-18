@@ -103,7 +103,7 @@ DeviceBuffer *Context::CreateDeviceBuffer(
   return Buf;
 }
 
-void Context::DestroyBuffer(MemoryObj &MemObj) {
+void Context::DestroyMemoryObj(MemoryObj &MemObj) {
   for(device_iterator I = Devices.begin(), E = Devices.end(); I != E; ++I)
     (*I)->DestroyMemoryObj(MemObj);
 }

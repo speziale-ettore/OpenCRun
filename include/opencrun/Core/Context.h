@@ -86,7 +86,7 @@ public:
                                    MemoryObj::AccessProtection AccessProt,
                                    cl_int *ErrCode = NULL);
 
-  void DestroyBuffer(MemoryObj &MemObj);
+  void DestroyMemoryObj(MemoryObj &MemObj);
 
   void ReportDiagnostic(llvm::StringRef Msg);
   void ReportDiagnostic(clang::TextDiagnosticBuffer &DiagInfo);

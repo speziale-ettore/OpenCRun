@@ -10,7 +10,7 @@ using namespace opencrun;
 //
 
 MemoryObj::~MemoryObj() {
-  Ctx->DestroyBuffer(*this);
+  Ctx->DestroyMemoryObj(*this);
 }
 
 //
