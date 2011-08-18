@@ -8,6 +8,8 @@ LEVEL = ..
 #
 # List all of the subdirectories that we will compile.
 #
-DIRS = libOpenCRun OpenCRunCPUPasses platform-query hardware-viewer
+DIRS = libOpenCRun \
+       OpenCRunPasses OpenCRunCPUPasses \
+       platform-query hardware-viewer
 
 include $(LEVEL)/Makefile.common

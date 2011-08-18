@@ -8,6 +8,6 @@ LEVEL = ..
 #
 # List all of the subdirectories that we will compile.
 #
-DIRS = System Util Core Device
+DIRS = System Util Passes Core Device
 
 include $(LEVEL)/Makefile.common
