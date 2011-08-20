@@ -15,6 +15,6 @@ LLVMLIBS = clangFrontend.a clangDriver.a clangSerialization.a clangCodeGen.a \
            clangParse.a clangSema.a clangAnalysis.a clangAST.a clangLex.a \
            clangBasic.a
 USEDLIBS = opencrunCore.a opencrunDevice.a opencrunCPUDevice.a \
-           opencrunCPUPasses.a opencrunUtil.a opencrunSystem.a
+	   opencrunCPUPasses.a opencrunPasses.a opencrunUtil.a opencrunSystem.a
 
 include $(LEVEL)/Makefile.common

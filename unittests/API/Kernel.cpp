@@ -38,6 +38,10 @@ public:
   }
 
 public:
+  cl::Context GetContext() { return Ctx; }
+  cl::Device GetDevice() { return Dev; }
+
+public:
   cl::Buffer AllocReturnBuffer(size_t Size) {
     return cl::Buffer(Ctx, CL_MEM_WRITE_ONLY, Size);
   }
@@ -72,7 +76,10 @@ TEST_F(KernelTest, VoidKernel) {
   EXPECT_EQ("foo", Kern.getInfo<CL_KERNEL_FUNCTION_NAME>());
   EXPECT_EQ(0u, Kern.getInfo<CL_KERNEL_NUM_ARGS>());
 
-  // The following check make sense only in OpenCRun.
+  cl::Context Ctx = GetContext();
+
+  // The following checks make sense only in OpenCRun.
+  EXPECT_EQ(Ctx(), Kern.getInfo<CL_KERNEL_CONTEXT>()());
   EXPECT_EQ(Prog(), Kern.getInfo<CL_KERNEL_PROGRAM>()());
 }
 
@@ -85,6 +92,37 @@ TEST_F(KernelTest, ArgsKernel) {
   EXPECT_EQ("foo", Kern.getInfo<CL_KERNEL_FUNCTION_NAME>());
   EXPECT_EQ(3u, Kern.getInfo<CL_KERNEL_NUM_ARGS>());
 
-  // The following check make sense only in OpenCRun.
+  cl::Context Ctx = GetContext();
+
+  // The following checks make sense only in OpenCRun.
+  EXPECT_EQ(Ctx(), Kern.getInfo<CL_KERNEL_CONTEXT>()());
   EXPECT_EQ(Prog(), Kern.getInfo<CL_KERNEL_PROGRAM>()());
+}
+
+TEST_F(KernelTest, WorkGroupParams) {
+  const char *Src = "kernel void foo() { }";
+  cl::Program Prog = BuildProgram(Src);
+
+  cl::Kernel Kern(Prog, "foo");
+
+  cl::Device Dev = GetDevice();
+
+  // This kernel uses no memory, so the work-group size is limited by the
+  // device.
+  EXPECT_GE(Dev.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>(),
+            Kern.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(Dev));
+
+  // CL_KERNEL_COMPILE_WORK_GROUP_SIZE not checked because the Kronos C++ header
+  // file is bugged.
+
+  EXPECT_EQ(0u, Kern.getWorkGroupInfo<CL_KERNEL_LOCAL_MEM_SIZE>(Dev));
+
+  size_t Sz;
+  Sz = Kern.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(Dev);
+
+  // OpenCL specs requires this device specific value to be greater or equal to
+  // 1.
+  EXPECT_LE(1u, Sz);
+
+  EXPECT_EQ(0u, Kern.getWorkGroupInfo<CL_KERNEL_PRIVATE_MEM_SIZE>(Dev));
 }

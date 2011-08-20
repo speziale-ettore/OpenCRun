@@ -2,6 +2,9 @@
 #include "opencrun/Core/Kernel.h"
 #include "opencrun/Core/Context.h"
 #include "opencrun/Core/Device.h"
+#include "opencrun/Passes/AllPasses.h"
+
+#include "llvm/PassManager.h"
 
 using namespace opencrun;
 
@@ -41,6 +44,37 @@ cl_int Kernel::SetArg(unsigned I, size_t Size, const void *Arg) {
     return SetByValueArg(I, Size, Arg);
 
   llvm_unreachable("Unknown argument type");
+}
+
+bool Kernel::GetMaxWorkGroupSize(size_t &Size, Device *Dev) {
+  if(!(Dev = RequireEstimates(Dev)))
+    return false;
+
+  Size = Estimates->GetMaxWorkGroupSize(Dev->GetPrivateMemorySize());
+
+  size_t DevMaxSize = Dev->GetMaxWorkGroupSize();
+  if(Size > DevMaxSize)
+    Size = DevMaxSize;
+
+  return true;
+}
+
+bool Kernel::GetMinLocalMemoryUsage(size_t &Size, Device *Dev) {
+  if(!(Dev = RequireEstimates(Dev)))
+    return false;
+
+  Size = Estimates->GetLocalMemoryUsage();
+
+  return true;
+}
+
+bool Kernel::GetMinPrivateMemoryUsage(size_t &Size, Device *Dev) {
+  if(!(Dev = RequireEstimates(Dev)))
+    return false;
+
+  Size = Estimates->GetPrivateMemoryUsage();
+
+  return true;
 }
 
 cl_int Kernel::SetBufferArg(unsigned I, size_t Size, const void *Arg) {
@@ -105,4 +139,36 @@ bool Kernel::IsByValue(llvm::Type &Ty) {
   return CheckTy->isIntegerTy() ||
          CheckTy->isFloatTy() ||
          CheckTy->isDoubleTy();
+}
+
+Device *Kernel::RequireEstimates(Device *Dev) {
+  CodesContainer::iterator I;
+  if(!Dev && Codes.size() == 1) {
+    CodesContainer::iterator I = Codes.begin();
+    Dev = I->first;
+  }
+
+  if(!Dev || !IsBuiltFor(*Dev))
+    return NULL;
+
+  // Double checked lock, unsafe read.
+  if(Estimates)
+    return Dev;
+
+  llvm::sys::ScopedLock Lock(ThisLock);
+
+  // Double checked lock, safe read.
+  if(!Estimates) {
+    llvm::PassManager PM;
+
+    FootprintEstimator *Pass = CreateFootprintEstimatorPass(GetName());
+    llvm::Function *Fun = GetFunction(*Dev);
+
+    PM.add(Pass);
+    PM.run(*Fun->getParent());
+
+    Estimates.reset(new Footprint(*Pass->GetFootprint(*Fun)));
+  }
+
+  return Dev;
 }

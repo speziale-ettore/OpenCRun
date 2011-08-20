@@ -4,3 +4,12 @@ PROPERTY(CL_KERNEL_NUM_ARGS, GetArgCount, cl_uint, unsigned)
 PROPERTY(CL_KERNEL_REFERENCE_COUNT, GetReferenceCount, cl_uint, unsigned)
 PROPERTY(CL_KERNEL_CONTEXT, GetContext, cl_context, opencrun::Context &)
 PROPERTY(CL_KERNEL_PROGRAM, GetProgram, cl_program, opencrun::Program &)
+
+DS_PROPERTY(CL_KERNEL_WORK_GROUP_SIZE, GetMaxWorkGroupSize, size_t, size_t)
+// CL_KERNEL_COMPILE_WORK_GROUP_SIZE manually implemented.
+DS_PROPERTY(CL_KERNEL_LOCAL_MEM_SIZE, GetMinLocalMemoryUsage, cl_ulong, size_t)
+// CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE manually implemented.
+DS_PROPERTY(CL_KERNEL_PRIVATE_MEM_SIZE,
+            GetMinPrivateMemoryUsage,
+            cl_ulong,
+            size_t)

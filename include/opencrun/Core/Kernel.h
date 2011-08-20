@@ -6,6 +6,7 @@
 
 #include "opencrun/Core/MemoryObj.h"
 #include "opencrun/Core/Program.h"
+#include "opencrun/Passes/FootprintEstimator.h"
 #include "opencrun/System/OS.h"
 #include "opencrun/Util/MTRefCounted.h"
 
@@ -157,16 +158,21 @@ public:
 
   // TODO: implement. Attribute must be gathered from metadata.
   llvm::SmallVector<size_t, 4> &GetRequiredWorkGroupSizes() const {
-    llvm_unreachable("Not yet implemented");
+    return *(new llvm::SmallVector<size_t, 4>(3, size_t(0)));
   }
 
   bool IsBuiltFor(Device &Dev) const { return Prog->IsBuiltFor(Dev); }
+  bool IsBuiltForOnlyADevice() const { return Codes.size() == 1; }
 
   // TODO: implement. Depends on kernel argument setting code, not well written.
   bool AreAllArgsSpecified() const { return true; }
 
   // TODO: implement. Attribute must be gathered from metadata.
   bool RequireWorkGroupSizes() const { return false; }
+
+  bool GetMaxWorkGroupSize(size_t &Size, Device *Dev = NULL);
+  bool GetMinLocalMemoryUsage(size_t &Size, Device *Dev = NULL);
+  bool GetMinPrivateMemoryUsage(size_t &Size, Device *Dev = NULL);
 
 private:
   llvm::Type *GetArgType(unsigned I) const {
@@ -191,6 +197,8 @@ private:
   bool IsBuffer(llvm::Type &Ty);
   bool IsByValue(llvm::Type &Ty);
 
+  Device *RequireEstimates(Device *Dev = NULL);
+
 private:
   llvm::sys::Mutex ThisLock;
 
@@ -198,6 +206,8 @@ private:
   CodesContainer Codes;
 
   ArgumentsContainer Arguments;
+
+  llvm::OwningPtr<Footprint> Estimates;
 };
 
 } // End namespace opencrun.

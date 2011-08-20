@@ -211,6 +211,8 @@ void CPUDevice::NotifyDone(CPUExecCommand *Cmd, int ExitStatus) {
 }
 
 void CPUDevice::InitDeviceInfo(sys::HardwareNode &Node) {
+  // TODO: define device geometry and set all properties!
+
   VendorID = 0;
   MaxComputeUnits = Node.CPUsCount();
   MaxWorkItemDimensions = 3;
@@ -266,6 +268,7 @@ void CPUDevice::InitDeviceInfo(sys::HardwareNode &Node) {
                           DeviceInfo::CanExecNativeKernel;
 
   // TODO: set SizeTypeMax, by the compiler?
+  PrivateMemorySize = LocalMemorySize;
 }
 
 void CPUDevice::InitJIT() {

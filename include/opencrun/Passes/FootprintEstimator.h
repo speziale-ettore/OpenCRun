@@ -13,7 +13,8 @@ namespace opencrun {
 
 class Footprint {
 public:
-  Footprint() : PrivateMemoryUsage(0),
+  Footprint() : LocalMemoryUsage(0),
+                PrivateMemoryUsage(0),
                 TempMemoryUsage(0) { }
 
 public:
@@ -25,6 +26,7 @@ public:
     TempMemoryUsage += Usage;
   }
 
+public:
   size_t GetMaxWorkGroupSize(size_t AvailablePrivateMemory) const {
     size_t MaxWorkItems;
 
@@ -41,7 +43,10 @@ public:
     return MaxWorkItems;
   }
 
-public:
+  size_t GetLocalMemoryUsage() const {
+    return LocalMemoryUsage;
+  }
+
   size_t GetPrivateMemoryUsage() const {
     return PrivateMemoryUsage;
   }
@@ -62,6 +67,7 @@ public:
   }
 
 private:
+  size_t LocalMemoryUsage;
   size_t PrivateMemoryUsage;
   size_t TempMemoryUsage;
 };
@@ -93,6 +99,14 @@ public:
   virtual void verifyAnalysis() const {
     // Now it makes no sense to verify this analysis. If it will becomes more
     // complex, then some verification code should be written.
+  }
+
+public:
+  Footprint *GetFootprint(llvm::Function &Kern) {
+    if(!Footprints.count(&Kern))
+      return NULL;
+
+   return &Footprints[&Kern];
   }
 
 private:

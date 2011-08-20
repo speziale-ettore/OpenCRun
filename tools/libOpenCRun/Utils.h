@@ -91,9 +91,9 @@ cl_int clFillValue<char, llvm::StringRef>(char *Dst,
 }
 
 template <> inline
-cl_int clFillValue<size_t, opencrun::DeviceInfo::MaxWorkItemSizesContainer &>(
+cl_int clFillValue<size_t, llvm::SmallVector<size_t, 4> &>(
   size_t *Dst,
-  opencrun::DeviceInfo::MaxWorkItemSizesContainer &Src,
+  llvm::SmallVector<size_t, 4> &Src,
   size_t DstSize,
   size_t *RightSizeRet) {
   size_t RightSize = sizeof(size_t) * Src.size();

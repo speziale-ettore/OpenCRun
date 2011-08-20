@@ -116,7 +116,9 @@ public:
                  Name(""),
 
                  // Other, non OpenCL specific properties.
-                 SizeTypeMax((1ull << 32) - 1)
+                 SizeTypeMax((1ull << 32) - 1),
+                 PrivateMemorySize(0),
+                 PreferredWorkGroupSizeMultiple(1)
                  { }
 
 public:
@@ -235,6 +237,10 @@ public:
   unsigned long long GetSizeTypeMax() const {
     return SizeTypeMax;
   }
+  size_t GetPrivateMemorySize() const { return PrivateMemorySize; }
+  size_t GetPreferredWorkGroupSizeMultiple() const {
+    return PreferredWorkGroupSizeMultiple;
+  }
 
   // Derived properties.
 
@@ -317,6 +323,8 @@ protected:
   // Other, non OpenCL specific properties.
 
   long long SizeTypeMax;
+  size_t PrivateMemorySize;
+  size_t PreferredWorkGroupSizeMultiple;
 };
 
 class Device : public _cl_device_id, public DeviceInfo {
