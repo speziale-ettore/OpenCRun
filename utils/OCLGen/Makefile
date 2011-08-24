@@ -15,8 +15,8 @@ TOOLNAME = oclgen
 
 LINK_COMPONENTS = support
 
-REQUIRES_EH := 1
-REQUIRES_RTTI := 1
+REQUIRES_EH = 1
+REQUIRES_RTTI = 1
 
 #
 # List all sources here, in order to force looking files not stored in current

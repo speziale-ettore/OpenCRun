@@ -8,7 +8,7 @@
 # Indicates our relative path to the top of the project's root directory.
 #
 LEVEL = .
-DIRS = utils lib tools unittests
+DIRS = utils lib tools unittests bench
 EXTRA_DIST = include
 
 #
