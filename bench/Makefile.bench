@@ -33,16 +33,10 @@ CXX.Flags += -Wno-cast-qual
 # instead of OpenCRun.
 BENCHLIBS = -lOCLBench -lOpenCRun -lrt
 
-ifeq ($(ENABLE_SHARED), 1)
-  ifneq (,$(RPATH))
-    # Add the absolute path to the dynamic library. This is ok because
-    # we'll never install benchmarks.
-    LD.Flags += $(RPATH) -Wl,$(SharedLibDir)
-  endif
-  # Also set {DYLD,LD}_LIBRARY_PATH because OSX ignores the rpath most
-  # of the time.
-  Run.Shared := $(SHLIBPATH_VAR)="$(SharedLibDir)$${$(SHLIBPATH_VAR):+:} \
-                $$$(SHLIBPATH_VAR)"
+# Add the absolute path to the dynamic library. This is ok because
+# we'll never install benchmarks.
+ifneq (,$(RPATH))
+  LD.Flags += $(RPATH) -Wl,$(SharedLibDir)
 endif
 
 # Kernels are stored in separate files, put them in the search path.
