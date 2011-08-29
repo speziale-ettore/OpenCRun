@@ -119,6 +119,14 @@ void CPUDevice::DestroyMemoryObj(MemoryObj &MemObj) {
 
 bool CPUDevice::Submit(Command &Cmd) {
   bool Submitted = false;
+  llvm::OwningPtr<ProfileSample> Sample;
+
+  // Take the profiling information here, in order to force this sample
+  // happening before the subsequents samples.
+  unsigned Counters = Cmd.IsProfiled() ? Profiler::Time : Profiler::None;
+  Sample.reset(GetProfilerSample(*this,
+                                 Counters,
+                                 ProfileSample::CommandSubmitted));
 
   if(EnqueueReadBuffer *Read = llvm::dyn_cast<EnqueueReadBuffer>(&Cmd))
     Submitted = Submit(*Read);
@@ -137,14 +145,11 @@ bool CPUDevice::Submit(Command &Cmd) {
   else
     llvm::report_fatal_error("unknown command submitted");
 
+  // The command has been submitted, register the sample. On failure, the
+  // llvm::OwningPtr destructor will reclaim the sample.
   if(Submitted) {
-    unsigned Counters = Cmd.IsProfiled() ? Profiler::Time : Profiler::None;
     InternalEvent &Ev = Cmd.GetNotifyEvent();
-
-    ProfileSample *Sample = GetProfilerSample(*this,
-                                              Counters,
-                                              ProfileSample::CommandSubmitted);
-    Ev.MarkSubmitted(Sample);
+    Ev.MarkSubmitted(Sample.take());
   }
 
   return Submitted;
