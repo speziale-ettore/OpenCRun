@@ -158,6 +158,7 @@ Device *Kernel::RequireEstimates(Device *Dev) {
   llvm::sys::ScopedLock Lock(ThisLock);
 
   // Double checked lock, safe read.
+  // TODO: is this thread safe with respect to compiler invocation?
   if(!Estimates) {
     llvm::PassManager PM;
 
