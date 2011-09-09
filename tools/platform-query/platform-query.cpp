@@ -367,7 +367,7 @@ void SayNDHelloFromAllDevices(const cl::Platform &Plat) {
     Queue.enqueueNDRangeKernel(Kernel,
                                cl::NullRange,
                                cl::NDRange(BUF_SIZE),
-                               cl::NDRange(1));
+                               cl::NDRange(BUF_SIZE));
     Queue.enqueueReadBuffer(BufA, true, 0, BUF_SIZE, HostBufA);
 
     std::cout << "Hello (" << HostBufA << "), From Device" << std::endl;

@@ -419,7 +419,7 @@ EnqueueNDRangeKernelBuilder::SetLocalWorkSize(const size_t *LocalWorkSizes) {
                          "work group size does not match "
                          "the one requested by the kernel");
 
-    this->LocalWorkSizes.push_back(I);
+    this->LocalWorkSizes.push_back(LocalWorkSizes[I]);
     WorkGroupSize *= LocalWorkSizes[I];
   }
 

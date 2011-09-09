@@ -58,67 +58,60 @@ size_t DimensionInfo::DimensionInfoIterator::GetGlobalOffset(unsigned I) const {
   return 0;
 }
 
-void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {
-  IndexesContainer &Locals = Indexes.first;
-
-  unsigned I = 0;
-  size_t Carry = N;
-
-  while(Carry) {
-    // We have to switch to the next work-group.
-    if(I == Locals.size()) {
-      // No next work-group, overflow.
-      if(!AdvanceToNextWorkGroupOrigin())
-        break;
-
-      // Next work-group exists, rebase from its origin.
-      else
-        I = 0;
-    }
-
-    size_t WorkGroupSize = DimInfo->GetLocalWorkItems(I);
-
-    size_t NewId = Locals[I] + N;
-    Carry = NewId / WorkGroupSize - Locals[I] / WorkGroupSize;
-
-    // Move along current dimension.
-    Locals[I++] = NewId % WorkGroupSize;
-  }
+void DimensionInfo::DimensionInfoIterator::Dump() {
+  Dump(llvm::errs());
 }
 
-bool DimensionInfo::DimensionInfoIterator::AdvanceToNextWorkGroupOrigin() {
+void DimensionInfo::DimensionInfoIterator::Dump(llvm::raw_ostream &OS) {
+  OS << **this << "\n";
+}
+
+void DimensionInfo::DimensionInfoIterator::Advance(unsigned N) {
   IndexesContainer &Locals = Indexes.first;
   IndexesContainer &WorkGroups = Indexes.second;
 
-  unsigned I = 0;
-  bool Carry = true;
+  unsigned Carry = N;
 
-  // Reset local origin.
-  Locals.assign(Locals.size(), 0);
+  // Move inside the work-group.
+  for(unsigned I = 0, E = Locals.size(); I != E && Carry; ++I) {
+    unsigned NewId = Locals[I] + Carry,
+             DimSize = DimInfo->GetLocalWorkItems(I);
 
-  while(Carry) {
-    // No more dimensions, overflow.
-    if(I == WorkGroups.size()) {
-      WorkGroups.assign(WorkGroups.size(), 0);
-      WorkGroups[0] = DimInfo->GetWorkGroupsCount(0);
-      break;
-    }
-
-    unsigned WorkGroupsCount = DimInfo->GetWorkGroupsCount(I);
-
-    size_t NewId = WorkGroups[I] + 1;
-    Carry = NewId / WorkGroupsCount - WorkGroups[I] / WorkGroupsCount;
-
-    // Move along current dimension.
-    WorkGroups[I++] = NewId % WorkGroupsCount;
+    Locals[I] = NewId % DimSize;
+    Carry = NewId / DimSize;
   }
 
-  return !Carry;
+  // Move between work-groups.
+  for(unsigned I = 0, E = WorkGroups.size(); I != E && Carry; ++I) {
+    unsigned NewId = WorkGroups[I] + Carry,
+             DimSize = DimInfo->GetWorkGroupsCount(I);
+
+    WorkGroups[I] = NewId % DimSize;
+    Carry = NewId / DimSize;
+  }
+
+  // Overflow.
+  if(Carry) {
+    unsigned WorkGroupsCount = WorkGroups.size();
+
+    Locals.assign(Locals.size(), 0);
+
+    WorkGroups.assign(WorkGroupsCount, 0);
+    WorkGroups[0] = DimInfo->GetWorkGroupsCount(WorkGroupsCount - 1);
+  }
 }
 
 //
 // DimensionInfo implementation.
 //
+
+void DimensionInfo::Dump() {
+  Dump(llvm::errs());
+}
+
+void DimensionInfo::Dump(llvm::raw_ostream &OS) {
+  OS << *this << "\n";
+}
 
 namespace llvm {
 

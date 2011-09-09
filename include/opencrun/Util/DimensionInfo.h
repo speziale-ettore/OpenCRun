@@ -133,9 +133,11 @@ public:
 
     size_t GetGlobalOffset(unsigned I) const;
 
+    void Dump();
+    void Dump(llvm::raw_ostream &OS);
+
   private:
     void Advance(unsigned N);
-    bool AdvanceToNextWorkGroupOrigin();
 
   private:
     DimensionInfo *DimInfo;
@@ -261,6 +263,9 @@ public:
 
     return true;
   }
+
+  void Dump();
+  void Dump(llvm::raw_ostream &OS);
 
 public:
   bool IsLocalWorkGroupSizeSpecified() const { return GetLocalWorkItems(); }
