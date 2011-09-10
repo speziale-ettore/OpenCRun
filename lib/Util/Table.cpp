@@ -3,6 +3,7 @@
 
 using namespace opencrun::util;
 
+const Table::NotAvailable Table::NA = Table::NotAvailable();
 const Table::EndOfLine Table::EOL = Table::EndOfLine();
   
 void Table::Dump(llvm::raw_ostream &OS, llvm::StringRef Prefix) const {

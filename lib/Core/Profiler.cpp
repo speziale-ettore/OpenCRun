@@ -52,11 +52,22 @@ void Profiler::DumpTrace(Command &Cmd,
     ProfileSample::Label Label = (*I)->GetLabel();
     int SubLabelId = (*I)->GetSubLabelId();
 
+    // First columns must be always printed.
     Tab << FormatLabel(Label, SubLabelId)
-        << Now
-        << Now - Last
-        << util::Table::EOL;
-    Last = Now;
+        << Now;
+
+    // Emit delta with respect to previous event.
+    if(SubLabelId < 0) {
+      Tab << Now - Last;
+      Last = Now;
+    }
+
+    // Do not emit delta for sub-commands.
+    else
+      Tab << util::Table::NA;
+
+    // Terminate the line.
+    Tab << util::Table::EOL;
   }
 
   DumpPrefix() << " ";

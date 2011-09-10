@@ -50,15 +50,14 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const Time& TM) {
   if(TM.IsValid())
     return OS << TM.AsDouble();
   else
-    return OS << "N\\A";
+    return OS << "N/A";
 }
 
-inline opencrun::util::Table &operator<<(opencrun::util::Table &Tab,
-                                         const Time &TM) {
+inline opencrun::util::Table &operator<<(util::Table &Tab, const Time &TM) {
   if(TM.IsValid())
     return Tab << TM.AsDouble();
   else
-    return Tab << "N\\A";
+    return Tab << util::Table::NA;
 }
 
 } // End namespace sys.

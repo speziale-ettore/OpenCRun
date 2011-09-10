@@ -75,6 +75,10 @@ void InternalEvent::MarkRunning(ProfileSample *Sample) {
   Signal(CL_RUNNING);
 }
 
+void InternalEvent::MarkSubRunning(ProfileSample *Sample) {
+  Profile << Sample;
+}
+
 void InternalEvent::MarkSubCompleted(ProfileSample *Sample) {
   Profile << Sample;
 }

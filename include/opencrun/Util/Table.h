@@ -65,9 +65,11 @@ private:
 //===----------------------------------------------------------------------===//
 class Table {
 public:
+  class NotAvailable { };
   class EndOfLine { };
 
 public:
+  static const NotAvailable NA;
   static const EndOfLine EOL;
 
 public:
@@ -97,6 +99,7 @@ public:
 
   Table &operator<<(double Num) { return operator<<(llvm::ftostr(Num)); }
 
+  Table &operator<<(const NotAvailable &NA) { return operator<<("N/A"); }
   Table &operator<<(const EndOfLine &EOL) { CurCol = 0; return *this; }
 
   void Dump(llvm::raw_ostream &OS, llvm::StringRef Prefix) const;

@@ -398,10 +398,22 @@ void CPUThread::Execute(CPUExecCommand *Cmd) {
   unsigned Counters = Cmd->IsProfiled() ? Profiler::Time : Profiler::None;
   int ExitStatus;
 
-  ProfileSample *Sample = GetProfilerSample(MP,
-                                            Counters,
-                                            ProfileSample::CommandRunning);
-  Ev.MarkRunning(Sample);
+  // Command started.
+  if(Cmd->RegisterStarted()) {
+    ProfileSample *Sample = GetProfilerSample(MP,
+                                              Counters,
+                                              ProfileSample::CommandRunning);
+    Ev.MarkRunning(Sample);
+  }
+
+  // This command is part of a large OpenCL command. Register partial execution.
+  if(CPUMultiExecCommand *MultiCmd = llvm::dyn_cast<CPUMultiExecCommand>(Cmd)) {
+    ProfileSample *Sample = GetProfilerSample(MP,
+                                              Counters,
+                                              ProfileSample::CommandRunning,
+                                              MultiCmd->GetId());
+    Ev.MarkSubRunning(Sample);
+  }
 
   if(ReadBufferCPUCommand *OnFly = llvm::dyn_cast<ReadBufferCPUCommand>(Cmd))
     ExitStatus = Execute(*OnFly);

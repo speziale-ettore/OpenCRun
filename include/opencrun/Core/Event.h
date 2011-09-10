@@ -77,6 +77,7 @@ public:
 public:
   void MarkSubmitted(ProfileSample *Sample = NULL);
   void MarkRunning(ProfileSample *Sample = NULL);
+  void MarkSubRunning(ProfileSample *Sample = NULL);
   void MarkSubCompleted(ProfileSample *Sample = NULL);
   void MarkCompleted(int Status, ProfileSample *Sample = NULL);
 

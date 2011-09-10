@@ -36,10 +36,20 @@ public:
     typedef llvm::SmallVector<int, 32> StatusContainer;
 
   public:
-    ResultRecorder(unsigned N = 1) : ToWait(N),
+    ResultRecorder(unsigned N = 1) : Started(false),
+                                     ToWait(N),
                                      ExitStatus(N, CPUCommand::NoError) { }
 
   public:
+    bool SetStarted() {
+      // Common case, command started -- skip atomic operations.
+      if(Started)
+        return false;
+
+      // Infrequent/contented case -- use CAS.
+      return !llvm::sys::CompareAndSwap(&Started, true, false);
+    }
+
     bool SetExitStatus(unsigned ExitStatus) {
       // Decrement the number of acknowledgment to wait.
       unsigned I = llvm::sys::AtomicDecrement(&ToWait);
@@ -64,6 +74,7 @@ public:
     }
 
   private:
+    volatile llvm::sys::cas_flag Started;
     volatile llvm::sys::cas_flag ToWait;
     StatusContainer ExitStatus;
   };
@@ -87,6 +98,10 @@ public:
   int GetExitStatus() { return Result->GetExitStatus(); }
 
 public:
+  bool RegisterStarted() {
+    return Result->SetStarted();
+  }
+
   bool RegisterCompleted(int ExitStatus) {
     return Result->SetExitStatus(ExitStatus);
   }
