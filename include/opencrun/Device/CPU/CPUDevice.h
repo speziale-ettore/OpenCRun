@@ -2,48 +2,15 @@
 #ifndef OPENCRUN_DEVICE_CPU_CPUDEVICE_H
 #define OPENCRUN_DEVICE_CPU_CPUDEVICE_H
 
-#include "opencrun/Core/Context.h"
 #include "opencrun/Core/Device.h"
-#include "opencrun/Core/MemoryObj.h"
+#include "opencrun/Device/CPU/Memory.h"
 #include "opencrun/Device/CPU/Multiprocessor.h"
 
 #include "llvm/ExecutionEngine/JIT.h"
-#include "llvm/Support/Mutex.h"
 
 using namespace opencrun::cpu;
 
 namespace opencrun {
-
-class Memory {
-public:
-  typedef std::map<MemoryObj *, void *> MappingsContainer;
-
-public:
-  Memory(size_t Size) : Size(Size), Available(Size) { }
-  ~Memory();
-
-public:
-  void *Alloc(MemoryObj &MemObj);
-  void *Alloc(HostBuffer &Buf);
-  void *Alloc(HostAccessibleBuffer &Buf);
-  void *Alloc(DeviceBuffer &Buf);
-
-  void Free(MemoryObj &MemObj);
-
-public:
-  const MappingsContainer &GetMappings() const { return Mappings; }
-
-  void *operator[](MemoryObj &MemObj) {
-    return Mappings.count(&MemObj) ? Mappings[&MemObj] : NULL;
-  }
-
-private:
-  llvm::sys::Mutex ThisLock;
-  MappingsContainer Mappings;
-
-  size_t Size;
-  size_t Available;
-};
 
 class CPUDevice : public Device {
 public:
@@ -110,7 +77,7 @@ private:
 
 private:
   MultiprocessorsContainer Multiprocessors;
-  Memory Global;
+  GlobalMemory Global;
 
   llvm::OwningPtr<llvm::ExecutionEngine> JIT;
 

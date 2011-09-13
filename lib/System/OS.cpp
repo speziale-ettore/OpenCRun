@@ -19,23 +19,19 @@ void *opencrun::sys::PageAlignedAlloc(size_t Size) {
   return Addr;
 }
 
-void *opencrun::sys::CacheAlignedAlloc(size_t Size, size_t &AllocSize) {
-  size_t CacheLineSize = Hardware::GetCacheLineSize();
+void *opencrun::sys::CacheAlignedAlloc(size_t Size) {
   void *Addr;
 
-  if(posix_memalign(&Addr, CacheLineSize, Size))
+  if(posix_memalign(&Addr, Hardware::GetCacheLineSize(), Size))
     llvm::report_fatal_error("Unable to allocate cache aligned memory");
-
-  AllocSize = Size + Size % CacheLineSize;
 
   return Addr;
 }
 
 void *opencrun::sys::NaturalAlignedAlloc(size_t Size) {
-  size_t MaxNaturalAlignment = Hardware::GetMaxNaturalAlignment();
   void *Addr;
 
-  if(posix_memalign(&Addr, MaxNaturalAlignment, Size))
+  if(posix_memalign(&Addr, Hardware::GetMaxNaturalAlignment(), Size))
     llvm::report_fatal_error("Unable to allocate natural aligned memory");
 
   return Addr;

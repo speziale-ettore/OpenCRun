@@ -3,7 +3,6 @@
 #include "opencrun/Device/CPU/InternalCalls.h"
 #include "opencrun/Core/Event.h"
 #include "opencrun/Device/CPUPasses/AllPasses.h"
-#include "opencrun/System/OS.h"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/PassManager.h"
@@ -19,69 +18,6 @@ void SignalJITCallStart(CPUDevice &Dev);
 void SignalJITCallEnd();
 
 } // End anonymous namespace.
-
-//
-// Memory implementation.
-//
-
-Memory::~Memory() {
-  for(MappingsContainer::iterator I = Mappings.begin(),
-                                  E = Mappings.end();
-                                  I != E;
-                                  ++I)
-    sys::Free(I->second);
-}
-
-void *Memory::Alloc(MemoryObj &MemObj) {
-  size_t RequestedSize = MemObj.GetSize();
-
-  llvm::sys::ScopedLock Lock(ThisLock);
-  
-  // TODO: more accurate check.
-  if(Available < RequestedSize) 
-    return NULL;
-
-  size_t ActualSize;
-  void *Addr = sys::CacheAlignedAlloc(MemObj.GetSize(), ActualSize);
-
-  if(Addr) {
-    Mappings[&MemObj] = Addr;
-    Available -= ActualSize;
-  }
-
-  return Addr;
-}
-
-void *Memory::Alloc(HostBuffer &Buf) {
-  return NULL;
-}
-
-void *Memory::Alloc(HostAccessibleBuffer &Buf) {
-  return NULL;
-}
-
-void *Memory::Alloc(DeviceBuffer &Buf) {
-  void *Addr = Alloc(llvm::cast<MemoryObj>(Buf));
-
-  if(Buf.HasInitializationData())
-    std::memcpy(Addr, Buf.GetInitializationData(), Buf.GetSize());
-
-  return Addr;
-}
-
-void Memory::Free(MemoryObj &MemObj) {
-  llvm::sys::ScopedLock Lock(ThisLock);
-
-  MappingsContainer::iterator I = Mappings.find(&MemObj);
-  if(I == Mappings.end())
-    return;
-
-  // TODO: remove the round-up error.
-  Available += MemObj.GetSize();
-
-  sys::Free(I->second);
-  Mappings.erase(I);
-}
 
 //
 // CPUDevice implementation.
@@ -360,8 +296,10 @@ bool CPUDevice::Submit(EnqueueNativeKernel &Cmd) {
   // TODO: implement a smarter selection policy.
   Multiprocessor &MP = **Multiprocessors.begin();
 
-  // TODO: remove critical race on mapping accesses.
-  Cmd.RemapMemoryObjAddresses(Global.GetMappings());
+  Memory::MappingsContainer Mappings;
+  Global.GetMappings(Mappings);
+
+  Cmd.RemapMemoryObjAddresses(Mappings);
 
   return MP.Submit(new NativeKernelCPUCommand(Cmd));
 }

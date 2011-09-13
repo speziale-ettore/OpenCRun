@@ -8,7 +8,7 @@ namespace opencrun {
 namespace sys {
 
 void *PageAlignedAlloc(size_t Size);
-void *CacheAlignedAlloc(size_t Size, size_t &AllocSize);
+void *CacheAlignedAlloc(size_t Size);
 void *NaturalAlignedAlloc(size_t Size);
 
 void *Alloc(size_t Size);
