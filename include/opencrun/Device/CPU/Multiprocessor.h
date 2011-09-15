@@ -45,9 +45,6 @@ private:
   CPUDevice &Dev;
   CPUThreadsContainer Threads;
 
-  void *LocalMemory;
-  size_t LocalMemorySize;
-
   friend class ProfilerTraits<Multiprocessor>;
 };
 

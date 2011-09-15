@@ -78,22 +78,44 @@ bool Kernel::GetMinPrivateMemoryUsage(size_t &Size, Device *Dev) {
 }
 
 cl_int Kernel::SetBufferArg(unsigned I, size_t Size, const void *Arg) {
-  if(Size != sizeof(cl_mem))
-    RETURN_WITH_ERROR(CL_INVALID_ARG_SIZE,
-                      "kernel argument size does not match");
+  Buffer *Buf;
+
+  Context &Ctx = GetContext();
 
   clang::LangAS::ID AddrSpace = GetArgAddressSpace(I);
 
-  Buffer *Buf;
-  std::memcpy(&Buf, Arg, Size);
+  switch(AddrSpace) {
+  case clang::LangAS::opencl_global:
+    if(Size != sizeof(cl_mem))
+      RETURN_WITH_ERROR(CL_INVALID_ARG_SIZE,
+                        "kernel argument size does not match");
+
+    std::memcpy(&Buf, Arg, Size);
+
+    break;
+
+  case clang::LangAS::opencl_constant:
+    llvm_unreachable("Not yet supported");
+
+  case clang::LangAS::opencl_local:
+    if(Arg)
+      RETURN_WITH_ERROR(CL_INVALID_ARG_VALUE, "cannot set a local pointer");
+
+    if(!Size)
+      RETURN_WITH_ERROR(CL_INVALID_ARG_SIZE, "local buffer size unspecified");
+
+    Buf = Ctx.CreateVirtualBuffer(Size, MemoryObj::ReadWrite);
+
+    break;
+
+  default:
+    llvm_unreachable("Invalid address space");
+  }
 
   if(Buf) {
-    if(Buf->GetContext() != GetContext())
+    if(Buf->GetContext() != Ctx)
       RETURN_WITH_ERROR(CL_INVALID_MEM_OBJECT,
                         "buffer and kernel contexts does not match");
-
-    if(AddrSpace == clang::LangAS::opencl_local)
-      RETURN_WITH_ERROR(CL_INVALID_ARG_VALUE, "cannot set a local pointer");
   }
 
   ThisLock.acquire();

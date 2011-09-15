@@ -49,3 +49,19 @@ NDRangeKernelBlockCPUCommand::NDRangeKernelBlockCPUCommand(
 NDRangeKernelBlockCPUCommand::~NDRangeKernelBlockCPUCommand() {
   sys::Free(Args);
 }
+
+void NDRangeKernelBlockCPUCommand::SetLocalParams(LocalMemory &Local) {
+  Kernel &Kern = GetKernel();
+
+  unsigned J = 0;
+  for(Kernel::arg_iterator I = Kern.arg_begin(),
+                           E = Kern.arg_end();
+                           I != E;
+                           ++I) {
+    BufferKernelArg *Arg = llvm::dyn_cast<BufferKernelArg>(*I);
+    if(Arg && Arg->OnLocalAddressSpace())
+      Args[J] = Local.Alloc(*Arg->GetBuffer());
+
+    ++J;
+  }
+}

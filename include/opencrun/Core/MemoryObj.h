@@ -18,6 +18,7 @@ public:
     HostBuffer,
     HostAccessibleBuffer,
     DeviceBuffer,
+    VirtualBuffer,
     LastBuffer
   };
 
@@ -117,6 +118,20 @@ public:
 private:
   void *Src;
 
+  friend class Context;
+};
+
+class VirtualBuffer : public Buffer {
+private:
+  VirtualBuffer(Context &Ctx,
+                size_t Size,
+                MemoryObj::AccessProtection AccessProt)
+    : Buffer(MemoryObj::VirtualBuffer, Ctx, Size, AccessProt) { }
+
+  VirtualBuffer(const VirtualBuffer &That); // Do not implement.
+  void operator=(const VirtualBuffer &That); // Do not implement.
+
+private:
   friend class Context;
 };
 

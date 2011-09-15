@@ -3,6 +3,7 @@
 #define OPENCRUN_DEVICE_CPU_CPUTHREAD_H
 
 #include "opencrun/Device/CPU/Command.h"
+#include "opencrun/Device/CPU/Memory.h"
 #include "opencrun/System/Hardware.h"
 #include "opencrun/System/Monitor.h"
 #include "opencrun/System/Thread.h"
@@ -22,7 +23,7 @@ public:
   typedef void (*EntryPoint)(void **);
 
 public:
-  ExecutionStack(const sys::HardwareComponent *Mem);
+  ExecutionStack(const sys::HardwareCache &Cache);
   ~ExecutionStack();
 
 public:
@@ -107,6 +108,7 @@ private:
   DimensionInfo::iterator Cur;
 
   ExecutionStack Stack;
+  LocalMemory Local;
 };
 
 CPUThread &GetCurrentThread();

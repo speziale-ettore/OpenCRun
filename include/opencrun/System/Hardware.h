@@ -69,8 +69,13 @@ public:
       return !(*this == That);
     }
 
-    const Ty &operator*() const { return static_cast<Ty &>(*ToVisit.top()); }
-    const Ty *operator->() const { return static_cast<Ty *>(ToVisit.top()); }
+    const Ty &operator*() const {
+      return *(const Ty *) ToVisit.top();
+    }
+
+    const Ty *operator->() const {
+      return (const Ty *) ToVisit.top();
+    }
 
     // Pre-increment.
     ConstFilteredIterator<Ty> &operator++() {
@@ -188,11 +193,11 @@ public:
 public:
   void Profile(llvm::FoldingSetNodeID &ID) const { ID.AddInteger(CoreID); }
 
-  virtual HardwareComponent *GetParent() { return GetFirstLevelMemory(); }
+  virtual HardwareComponent *GetParent();
 
   unsigned GetCoreID() const { return CoreID; }
 
-  HardwareComponent *GetFirstLevelMemory() const ;
+  HardwareCache *GetFirstLevelCache() const ;
   HardwareComponent *GetLastLevelMemory() { return GetAncestor(); }
 
 private:
@@ -287,7 +292,7 @@ public:
   }
 
 public:
-  typedef HardwareComponent::ConstFilteredIterator<HardwareCPU>
+  typedef HardwareComponent::ConstFilteredIterator<const HardwareCPU>
           const_cpu_iterator;
 
   typedef HardwareComponent::ConstFilteredLinkIterator<HardwareCache>
@@ -314,12 +319,19 @@ public:
   const_llc_iterator llc_begin() const {
     return const_llc_iterator(begin(), end());
   }
+
   const_llc_iterator llc_end() const {
     return const_llc_iterator(end(), end());
   }
 
+  const HardwareCPU &cpu_front() const;
+  const HardwareCPU &cpu_back() const;
+
   const HardwareCache &llc_front() const;
   const HardwareCache &llc_back() const;
+
+  const HardwareCache &l1c_front() const;
+  const HardwareCache &l1c_back() const;
 
 public:
   HardwareNode(unsigned NodeID) : HardwareComponent(HardwareComponent::Node),

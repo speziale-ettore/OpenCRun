@@ -4,6 +4,7 @@
 
 #include "opencrun/Core/Command.h"
 #include "opencrun/Core/Context.h"
+#include "opencrun/Device/CPU/Memory.h"
 #include "opencrun/System/FastRendevouz.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -370,6 +371,9 @@ public:
                                CPUCommand::ResultRecorder &Result);
 
   ~NDRangeKernelBlockCPUCommand();
+
+public:
+  void SetLocalParams(LocalMemory &Local);
 
 public:
   Signature &GetFunction() { return Entry; }

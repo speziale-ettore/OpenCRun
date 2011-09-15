@@ -103,9 +103,24 @@ DeviceBuffer *Context::CreateDeviceBuffer(
   return Buf;
 }
 
+Buffer *Context::CreateVirtualBuffer(size_t Size,
+                                     MemoryObj::AccessProtection AccessProt,
+                                     cl_int *ErrCode) {
+  if(!Size)
+    RETURN_WITH_ERROR(ErrCode, CL_INVALID_BUFFER_SIZE, "buffer size is zero");
+
+  VirtualBuffer *Buf = new VirtualBuffer(*this, Size, AccessProt);
+
+  if(ErrCode)
+    *ErrCode = CL_SUCCESS;
+
+  return Buf;
+}
+
 void Context::DestroyMemoryObj(MemoryObj &MemObj) {
   for(device_iterator I = Devices.begin(), E = Devices.end(); I != E; ++I)
-    (*I)->DestroyMemoryObj(MemObj);
+    if(!llvm::isa<VirtualBuffer>(MemObj))
+      (*I)->DestroyMemoryObj(MemObj);
 }
 
 void Context::ReportDiagnostic(llvm::StringRef Msg) {

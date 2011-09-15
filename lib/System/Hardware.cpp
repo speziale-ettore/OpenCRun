@@ -417,13 +417,16 @@ HardwareComponent *HardwareComponent::GetAncestor() {
 // HardwareCPU implementation.
 //
 
-HardwareComponent *HardwareCPU::GetFirstLevelMemory() const {
+HardwareComponent *HardwareCPU::GetParent() {
+  return GetFirstLevelCache();
+}
+
+HardwareCache *HardwareCPU::GetFirstLevelCache() const {
   for(HardwareComponent::iterator I = begin(), E = end(); I != E; ++I) {
     HardwareComponent *Comp = *I;
 
-    if(!llvm::isa<HardwareCPU>(Comp))
-      return Comp;
-
+    if(HardwareCache *Cache = llvm::dyn_cast<HardwareCache>(Comp))
+      return Cache;
   }
 
   return NULL;
@@ -450,6 +453,21 @@ HardwareComponent *HardwareCache::GetNextLevelMemory() {
 // HardwareNode implementation.
 //
 
+const HardwareCPU &HardwareNode::cpu_front() const {
+  return *cpu_begin();
+}
+
+const HardwareCPU &HardwareNode::cpu_back() const {
+  const_cpu_iterator I = cpu_begin(),
+                     E = cpu_end(),
+                     J = I;
+
+  for(; I != E; ++I)
+    J = I;
+
+  return *J;
+}
+
 const HardwareCache &HardwareNode::llc_front() const {
   return *llc_begin();
 }
@@ -463,6 +481,18 @@ const HardwareCache &HardwareNode::llc_back() const {
     J = I;
 
   return *J;
+}
+
+const HardwareCache &HardwareNode::l1c_front() const {
+  HardwareCPU &CPU = const_cast<HardwareCPU &>(cpu_front());
+
+  return *llvm::cast<HardwareCache>(CPU.GetParent());
+}
+
+const HardwareCache &HardwareNode::l1c_back() const {
+  HardwareCPU &CPU = const_cast<HardwareCPU &>(cpu_back());
+
+  return *llvm::cast<HardwareCache>(CPU.GetParent());
 }
 
 unsigned HardwareNode::CPUsCount() const {

@@ -4,6 +4,7 @@
 
 #include "opencrun/Core/Context.h"
 #include "opencrun/Core/MemoryObj.h"
+#include "opencrun/System/Hardware.h"
 #include "opencrun/System/OS.h"
 
 #include "llvm/Support/Mutex.h"
@@ -52,6 +53,23 @@ private:
 
   size_t Size;
   size_t Available;
+};
+
+class LocalMemory : public Memory {
+public:
+  LocalMemory(const sys::HardwareCache &Cache);
+  ~LocalMemory();
+
+public:
+  void Reset(size_t AutomaticVarSize = 0);
+
+  void *Alloc(MemoryObj &MemObj);
+
+private:
+  size_t Size;
+
+  void *Base;
+  void *Next;
 };
 
 } // End namespace cpu.

@@ -65,3 +65,34 @@ void GlobalMemory::Free(MemoryObj &MemObj) {
   sys::Free(I->second);
   Mappings.erase(I);
 }
+
+//
+// LocalMemory implementation.
+//
+
+LocalMemory::LocalMemory(const sys::HardwareCache &Cache) :
+  Size(Cache.GetSize()) {
+  Base = sys::PageAlignedAlloc(Size);
+  Next = Base;
+}
+
+LocalMemory::~LocalMemory() {
+  sys::Free(Base);
+}
+
+void LocalMemory::Reset(size_t AutomaticVarSize) {
+  assert(AutomaticVarSize <= Size && "Not enough space");
+
+  uintptr_t NextAddr = reinterpret_cast<uintptr_t>(Next) + AutomaticVarSize;
+  Next = reinterpret_cast<void *>(NextAddr);
+}
+
+void *LocalMemory::Alloc(MemoryObj &MemObj) {
+  uintptr_t NextAddr = reinterpret_cast<uintptr_t>(Next) + MemObj.GetSize();
+  Next = reinterpret_cast<void *>(NextAddr);
+
+  assert(NextAddr - reinterpret_cast<uintptr_t>(Base) <= Size &&
+         "Not enough space");
+
+  return Next;
+}

@@ -85,6 +85,9 @@ public:
                                    void *Src,
                                    MemoryObj::AccessProtection AccessProt,
                                    cl_int *ErrCode = NULL);
+  Buffer *CreateVirtualBuffer(size_t Size,
+                              MemoryObj::AccessProtection AccessProt,
+                              cl_int *ErrCode = NULL);
 
   void DestroyMemoryObj(MemoryObj &MemObj);
 

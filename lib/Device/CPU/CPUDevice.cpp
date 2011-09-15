@@ -152,6 +152,10 @@ void CPUDevice::NotifyDone(CPUExecCommand *Cmd, int ExitStatus) {
 }
 
 void CPUDevice::InitDeviceInfo(sys::HardwareNode &Node) {
+  // Assuming symmetric systems.
+  const sys::HardwareCache &L1Cache = Node.l1c_front();
+  const sys::HardwareCache &LLCache = Node.llc_front();
+
   // TODO: define device geometry and set all properties!
 
   VendorID = 0;
@@ -178,13 +182,8 @@ void CPUDevice::InitDeviceInfo(sys::HardwareNode &Node) {
 
   GlobalMemoryCacheType = DeviceInfo::ReadWriteCache;
 
-  // Assuming symmetric systems.
-  if(Node.llc_begin() != Node.llc_end()) {
-    const sys::HardwareCache &Cache = Node.llc_front();
-
-    GlobalMemoryCachelineSize = Cache.GetLineSize();
-    GlobalMemoryCacheSize = Cache.GetSize();
-  }
+  GlobalMemoryCachelineSize = LLCache.GetLineSize();
+  GlobalMemoryCacheSize = LLCache.GetSize();
 
   GlobalMemorySize = Node.GetMemorySize();
 
@@ -192,8 +191,7 @@ void CPUDevice::InitDeviceInfo(sys::HardwareNode &Node) {
   // TODO: set MaxConstantArguments.
 
   LocalMemoryMapping = DeviceInfo::SharedLocal;
-  if(GlobalMemoryCacheSize)
-    LocalMemorySize = GlobalMemoryCacheSize;
+  LocalMemorySize = L1Cache.GetSize();
   SupportErrorCorrection = true;
 
   HostUnifiedMemory = true;

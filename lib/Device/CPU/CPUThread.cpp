@@ -49,15 +49,11 @@ void ResetCurrentThread();
 // ExecutionStack implementation.
 //
 
-ExecutionStack::ExecutionStack(const sys::HardwareComponent *Mem) {
-  // Ideally, all the stack should reside in the L1 cache, toghether with the
-  // local memory. By default, allocate a 4 * sizeof(L1D) data segment for
-  // holding all work-item stacks.
-  if(const sys::HardwareCache *Cache = llvm::cast<sys::HardwareCache>(Mem)) {
-    StackSize = 4 * Cache->GetSize();
-    Stack = sys::PageAlignedAlloc(StackSize);
-  } else
-    llvm_unreachable("Unable to allocate work item stacks");
+ExecutionStack::ExecutionStack(const sys::HardwareCache &Cache) {
+  // Ideally, all the stack should reside in the L1 cache, together with the
+  // local memory.
+  StackSize = 4 * Cache.GetSize();
+  Stack = sys::PageAlignedAlloc(StackSize);
 }
 
 ExecutionStack::~ExecutionStack() {
@@ -245,7 +241,8 @@ CPUThread::CPUThread(Multiprocessor &MP, const sys::HardwareCPU &CPU) :
   Thread(CPU),
   Mode(FullyOperational),
   MP(MP),
-  Stack(CPU.GetFirstLevelMemory()) {
+  Stack(*CPU.GetFirstLevelCache()),
+  Local(*CPU.GetFirstLevelCache()) {
   Start();
 }
 
@@ -449,6 +446,12 @@ int CPUThread::Execute(WriteBufferCPUCommand &Cmd) {
 }
 
 int CPUThread::Execute(NDRangeKernelBlockCPUCommand &Cmd) {
+  // Reserve space for local buffers.
+  // TODO: reserve space for local automatic buffers.
+  Local.Reset(0);
+  Cmd.SetLocalParams(Local);
+
+  // Get function and arguments.
   NDRangeKernelBlockCPUCommand::Signature Func = Cmd.GetFunction();
   void **Args = Cmd.GetArgumentsPointer();
 

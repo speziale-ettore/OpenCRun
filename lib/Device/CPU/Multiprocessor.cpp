@@ -13,20 +13,16 @@ using namespace opencrun::cpu;
 //
 
 Multiprocessor::Multiprocessor(CPUDevice &Dev, const sys::HardwareCache &LLC)
-  : Dev(Dev),
-    LocalMemorySize(LLC.GetSize()) {
+  : Dev(Dev) {
   for(sys::HardwareCache::const_cpu_iterator I = LLC.cpu_begin(),
                                              E = LLC.cpu_end();
                                              I != E;
                                              ++I)
     Threads.insert(new CPUThread(*this, *I));
-
-  LocalMemory = sys::PageAlignedAlloc(LocalMemorySize);
 }
 
 Multiprocessor::~Multiprocessor() {
   llvm::DeleteContainerPointers(Threads);
-  std::free(LocalMemory);
 }
 
 bool Multiprocessor::Submit(ReadBufferCPUCommand *Cmd) {
