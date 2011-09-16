@@ -247,13 +247,11 @@ CPUThread::CPUThread(Multiprocessor &MP, const sys::HardwareCPU &CPU) :
 }
 
 CPUThread::~CPUThread() {
-  // Send a command to stop the device thread. Do not employ sys:FastRendevouz
-  // because potentially we can wait for a long time.
+  // Tell worker thread to stop activities.
   CPUCommand *Cmd = new StopDeviceCPUCommand();
   Submit(Cmd);
 
-  // Use the Thread::Join method instead, that suspend the current thread until
-  // the joined thread exits.
+  // Use Thread::Join to suspend current thread until the joined thread exits.
   Join();
 }
 
@@ -314,15 +312,7 @@ void CPUThread::SwitchToNextWorkItem() {
 }
 
 bool CPUThread::Submit(CPUServiceCommand *Cmd) {
-  if(RunStaticConstructorsCPUCommand *Ctor =
-       llvm::dyn_cast<RunStaticConstructorsCPUCommand>(Cmd))
-    return Submit(Ctor);
-
-  else if(RunStaticDestructorsCPUCommand *Dtor =
-            llvm::dyn_cast<RunStaticDestructorsCPUCommand>(Cmd))
-    return Submit(Dtor);
-
-  else if(StopDeviceCPUCommand *Enq = llvm::dyn_cast<StopDeviceCPUCommand>(Cmd))
+  if(StopDeviceCPUCommand *Enq = llvm::dyn_cast<StopDeviceCPUCommand>(Cmd))
     return Submit(Enq);
 
   else
@@ -361,33 +351,11 @@ void CPUThread::Execute(CPUCommand *Cmd) {
 }
 
 void CPUThread::Execute(CPUServiceCommand *Cmd) {
-  if(RunStaticConstructorsCPUCommand *OnFly =
-       llvm::dyn_cast<RunStaticConstructorsCPUCommand>(Cmd))
-    Execute(OnFly);
-
-  else if(RunStaticDestructorsCPUCommand *OnFly =
-            llvm::dyn_cast<RunStaticDestructorsCPUCommand>(Cmd))
-    Execute(OnFly);
-
-  else if(StopDeviceCPUCommand *OnFly =
+  if(StopDeviceCPUCommand *OnFly =
             llvm::dyn_cast<StopDeviceCPUCommand>(Cmd))
     Execute(OnFly);
 
   MP.NotifyDone(Cmd);
-}
-
-void CPUThread::Execute(RunStaticConstructorsCPUCommand *Cmd) {
-  RunStaticConstructorsCPUCommand::ConstructorsInvoker &Invoker =
-    Cmd->GetInvoker();
-
-  Invoker();
-}
-
-void CPUThread::Execute(RunStaticDestructorsCPUCommand *Cmd) {
-  RunStaticDestructorsCPUCommand::DestructorsInvoker &Invoker =
-    Cmd->GetInvoker();
-
-  Invoker();
 }
 
 void CPUThread::Execute(CPUExecCommand *Cmd) {

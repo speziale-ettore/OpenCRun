@@ -32,9 +32,6 @@ public:
   bool Submit(NDRangeKernelBlockCPUCommand *Cmd);
   bool Submit(NativeKernelCPUCommand *Cmd);
 
-  bool Submit(RunStaticConstructorsCPUCommand *Cmd);
-  bool Submit(RunStaticDestructorsCPUCommand *Cmd);
-
   void NotifyDone(CPUServiceCommand *Cmd);
   void NotifyDone(CPUExecCommand *Cmd, int ExitStatus);
 

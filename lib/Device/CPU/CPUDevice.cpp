@@ -92,6 +92,8 @@ bool CPUDevice::Submit(Command &Cmd) {
 }
 
 void CPUDevice::UnregisterKernel(Kernel &Kern) {
+  // TODO: modules must be ref-counted -- unregister a kernel does not
+  // necessary enforce module unloading?
   llvm::sys::ScopedLock Lock(ThisLock);
 
   // Remove module from the JIT.
@@ -99,29 +101,13 @@ void CPUDevice::UnregisterKernel(Kernel &Kern) {
   JIT->removeModule(&Mod);
 
   // Erase kernel from the cache.
-  BlockParallelEntryPoints::iterator I, E;
-  I = BlockParallelEntriesCache.find(&Kern);
-  E = BlockParallelEntriesCache.end();
+  BlockParallelEntryPoints::iterator I = BlockParallelEntriesCache.find(&Kern),
+                                     E = BlockParallelEntriesCache.end();
   if(I != E)
     BlockParallelEntriesCache.erase(I);
 
-  // Build a command to invoke static destructors.
-  RunStaticDestructorsCPUCommand::DestructorsInvoker Invoker(Mod, *JIT);
-  sys::FastRendevouz Synch;
-  RunStaticDestructorsCPUCommand *Cmd;
-
-  Cmd = new RunStaticDestructorsCPUCommand(Invoker, Synch);
-
-  Multiprocessor &MP = **Multiprocessors.begin();
-
-  // None available for executing the command: it is critical, run directly.
-  if(!MP.Submit(Cmd)) {
-    Invoker();
-    delete Cmd;
-
-  // Wait for other thread invoking static destructors.
-  } else
-    Synch.Wait();
+  // Invoke static destructors.
+  JIT->runStaticConstructorsDestructors(&Mod, true);
 }
 
 void CPUDevice::NotifyDone(CPUExecCommand *Cmd, int ExitStatus) {
@@ -381,23 +367,9 @@ CPUDevice::GetBlockParallelEntryPoint(Kernel &Kern) {
   void *EntryPtr = JIT->getPointerToFunction(EntryFn);
   SignalJITCallEnd();
 
-  // Build a command to invoke static constructors.
-  RunStaticConstructorsCPUCommand::ConstructorsInvoker Invoker(Mod, *JIT);
-  RunStaticConstructorsCPUCommand *Cmd;
-  sys::FastRendevouz Synch;
-
-  Cmd = new RunStaticConstructorsCPUCommand(Invoker, Synch);
-
-  Multiprocessor &MP = **Multiprocessors.begin();
-
-  // None available for executing the command: it is critical, run directly.
-  if(!MP.Submit(Cmd)) {
-    Invoker();
-    delete Cmd;
-
-  // Wait for other thread invoking static constructors.
-  } else
-    Synch.Wait();
+  // Invoke static constructors -- we do not expect static constructors in
+  // OpenCL code, run only for safety.
+  JIT->runStaticConstructorsDestructors(&Mod, false);
 
   // Cache it. In order to correctly cast the EntryPtr to a function pointer we
   // must pass through a uintptr_t. Otherwise, a warning is issued by the

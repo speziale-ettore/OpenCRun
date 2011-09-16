@@ -5,7 +5,6 @@
 #include "opencrun/Core/Command.h"
 #include "opencrun/Core/Context.h"
 #include "opencrun/Device/CPU/Memory.h"
-#include "opencrun/System/FastRendevouz.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 
@@ -15,8 +14,6 @@ namespace cpu {
 class CPUCommand {
 public:
   enum Type {
-    RunStaticConstructors,
-    RunStaticDestructors,
     StopDevice,
     LastCPUServiceCommand,
     ReadBuffer,
@@ -119,21 +116,10 @@ public:
   }
 
 protected:
-  CPUServiceCommand(CPUCommand::Type CommandTy) : CPUCommand(CommandTy),
-                                                  Synch(NULL) { }
-
-  CPUServiceCommand(CPUCommand::Type CommandTy,
-                    sys::FastRendevouz &Synch) : CPUCommand(CommandTy),
-                                                 Synch(&Synch) { }
-
-public:
-  virtual ~CPUServiceCommand() { if(Synch) Synch->Signal(); }
+  CPUServiceCommand(CPUCommand::Type CommandTy) : CPUCommand(CommandTy) { }
 
 public:
   virtual bool IsProfiled() const { return false; }
-
-private:
-  sys::FastRendevouz *Synch;
 };
 
 class CPUExecCommand : public CPUCommand {
@@ -196,84 +182,6 @@ public:
 
 private:
   unsigned Id;
-};
-
-class RunStaticConstructorsCPUCommand : public CPUServiceCommand {
-public:
-  static bool classof(const CPUCommand *Cmd) {
-    return Cmd->GetType() == CPUCommand::RunStaticConstructors;
-  }
-
-public:
-  class ConstructorsInvoker {
-  public:
-    ConstructorsInvoker(llvm::Module &Mod,
-                        llvm::ExecutionEngine &Engine) : Mod(Mod),
-                                                         Engine(Engine) { }
-
-  public:
-    void operator()() {
-      // Do not lock the execution engine. This because the JIT lock is held by
-      // the thread that has sent the command associated to this object and that
-      // thread is spin-waiting for static constructors invocation.
-      Engine.runStaticConstructorsDestructors(&Mod, false);
-    }
-
-  private:
-    llvm::Module &Mod;
-    llvm::ExecutionEngine &Engine;
-  };
-
-public:
-  RunStaticConstructorsCPUCommand(ConstructorsInvoker Invoker,
-                                  sys::FastRendevouz &Synch) :
-    CPUServiceCommand(CPUCommand::RunStaticConstructors, Synch),
-    Invoker(Invoker) { }
-
-public:
-  ConstructorsInvoker &GetInvoker() { return Invoker; }
-
-private:
-  ConstructorsInvoker Invoker;
-};
-
-class RunStaticDestructorsCPUCommand : public CPUServiceCommand {
-public:
-  static bool classof(const CPUCommand *Cmd) {
-    return Cmd->GetType() == CPUCommand::RunStaticDestructors;
-  }
-
-public:
-  class DestructorsInvoker {
-  public:
-    DestructorsInvoker(llvm::Module &Mod,
-                       llvm::ExecutionEngine &Engine) : Mod(Mod),
-                                                        Engine(Engine) { }
-
-  public:
-    void operator()() {
-      // Do not lock the execution engine. This because the JIT lock is held by
-      // the thread that has sent the command associated to this object and that
-      // thread is spin-waiting for static constructors invocation.
-      Engine.runStaticConstructorsDestructors(&Mod, true);
-    }
-
-  private:
-    llvm::Module &Mod;
-    llvm::ExecutionEngine &Engine;
-  };
-
-public:
-  RunStaticDestructorsCPUCommand(DestructorsInvoker Invoker,
-                                 sys::FastRendevouz &Synch) :
-    CPUServiceCommand(CPUCommand::RunStaticDestructors, Synch),
-    Invoker(Invoker) { }
-
-public:
-  DestructorsInvoker &GetInvoker() { return Invoker; }
-
-private:
-  DestructorsInvoker Invoker;
 };
 
 class StopDeviceCPUCommand : public CPUServiceCommand {

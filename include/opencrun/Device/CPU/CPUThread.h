@@ -8,8 +8,6 @@
 #include "opencrun/System/Monitor.h"
 #include "opencrun/System/Thread.h"
 
-#include "llvm/ADT/BitVector.h"
-
 #include <deque>
 
 namespace opencrun {
@@ -73,8 +71,6 @@ public:
 
 private:
   bool Submit(CPUServiceCommand *Cmd);
-  bool Submit(RunStaticConstructorsCPUCommand *Cmd) { return true; }
-  bool Submit(RunStaticDestructorsCPUCommand *Cmd) { return true; }
   bool Submit(StopDeviceCPUCommand *Cmd) { Mode = TearDown; return true; }
 
   bool Submit(CPUExecCommand *Cmd);
@@ -86,8 +82,6 @@ private:
   void Execute(CPUCommand *Cmd);
 
   void Execute(CPUServiceCommand *Cmd);
-  void Execute(RunStaticConstructorsCPUCommand *Cmd);
-  void Execute(RunStaticDestructorsCPUCommand *Cmd);
   void Execute(StopDeviceCPUCommand *Cmd) { Mode = Stopped; }
 
   void Execute(CPUExecCommand *Cmd);

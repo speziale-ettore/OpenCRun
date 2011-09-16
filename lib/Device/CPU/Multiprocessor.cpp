@@ -52,18 +52,6 @@ bool Multiprocessor::Submit(NativeKernelCPUCommand *Cmd) {
   return Thr.Submit(static_cast<CPUCommand *>(Cmd));
 }
 
-bool Multiprocessor::Submit(RunStaticConstructorsCPUCommand *Cmd) {
-  CPUThread &Thr = **Threads.begin();
-
-  return Thr.Submit(static_cast<CPUCommand *>(Cmd));
-}
-
-bool Multiprocessor::Submit(RunStaticDestructorsCPUCommand *Cmd) {
-  CPUThread &Thr = **Threads.begin();
-
-  return Thr.Submit(static_cast<CPUCommand *>(Cmd));
-}
-
 void Multiprocessor::NotifyDone(CPUServiceCommand *Cmd) {
   Dev.NotifyDone(Cmd);
 }
