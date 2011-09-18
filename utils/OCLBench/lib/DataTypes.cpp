@@ -17,16 +17,23 @@ ManagedMatrix<cl_float>::operator==(const ManagedMatrix<cl_float> &That) const {
 
   for(unsigned I = 0, E = GetNVolume(); I != E; ++I) {
     cl_float Diff = (*this)[I] - That[I];
-    Error *= Diff * Diff;
+    Error += Diff * Diff;
     Ref += (*this)[I] * (*this)[I];
   }
 
-  cl_float NormRef = std::sqrt(Ref);
   if(std::abs(Ref) < 1e-7f)
     return false;
 
+  cl_float NormRef = std::sqrt(Ref);
   cl_float NormError = std::sqrt(Error);
+
   Error = NormError / NormRef;
 
   return Error < 1e-6f;
+}
+
+template <>
+void ManagedMatrix<cl_float>::Randomize() {
+  for(unsigned I = 0, E = GetNVolume(); I != E; ++I)
+    Mem[I] = 11.0f * rand() / (RAND_MAX + 1.0f);
 }

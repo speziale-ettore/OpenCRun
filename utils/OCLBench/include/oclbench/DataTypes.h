@@ -68,6 +68,10 @@ public:
   }
 
 public:
+  void Reset() {
+    std::memset(GetMem(), 0, GetMemSize());
+  }
+
   void Randomize() {
     for(unsigned I = 0, E = GetNVolume(); I != E; ++I)
       Mem[I] = random();
@@ -129,6 +133,12 @@ private:
 // single precision floating point type. Code borrowed from AMD OpenCL SDK.
 template <> bool
 ManagedMatrix<cl_float>::operator==(const ManagedMatrix<cl_float> &That) const;
+
+// Default implementation generates random bits casted to floats. Provide
+// specialization for generation floating point numbers within a range. Code
+// borrowed from ADM OpenCL SDK.
+template <>
+void ManagedMatrix<cl_float>::Randomize();
 
 template <typename Ty>
 class BiManagedMatrix : public ManagedMatrix<Ty> {

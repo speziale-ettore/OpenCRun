@@ -8,6 +8,6 @@ LEVEL = ..
 #
 # List all of the subdirectories that we will compile.
 #
-PARALLEL_DIRS = schoolbook-msquare
+PARALLEL_DIRS = schoolbook-msquare blocked-msquare
 
 include $(LEVEL)/Makefile.common

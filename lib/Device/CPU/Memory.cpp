@@ -83,16 +83,18 @@ LocalMemory::~LocalMemory() {
 void LocalMemory::Reset(size_t AutomaticVarSize) {
   assert(AutomaticVarSize <= Size && "Not enough space");
 
-  uintptr_t NextAddr = reinterpret_cast<uintptr_t>(Next) + AutomaticVarSize;
+  uintptr_t NextAddr = reinterpret_cast<uintptr_t>(Base) + AutomaticVarSize;
   Next = reinterpret_cast<void *>(NextAddr);
 }
 
 void *LocalMemory::Alloc(MemoryObj &MemObj) {
+  void *Addr = Next;
+
   uintptr_t NextAddr = reinterpret_cast<uintptr_t>(Next) + MemObj.GetSize();
   Next = reinterpret_cast<void *>(NextAddr);
 
   assert(NextAddr - reinterpret_cast<uintptr_t>(Base) <= Size &&
          "Not enough space");
 
-  return Next;
+  return Addr;
 }
