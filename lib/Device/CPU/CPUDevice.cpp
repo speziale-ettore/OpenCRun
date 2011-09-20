@@ -8,7 +8,7 @@
 #include "llvm/PassManager.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/ThreadLocal.h"
-#include "llvm/Target/TargetSelect.h"
+#include "llvm/Support/TargetSelect.h"
 
 using namespace opencrun;
 

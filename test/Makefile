@@ -161,6 +161,7 @@ Unit/lit.site.cfg: $(PROJ_OBJ_DIR)/Unit/.dir FORCE
 	@echo s=@LLVM_TOOLS_DIR@=$(LLVM_TOOL_DIR)=g >> unit.tmp
 	@echo s=@LLVMGCCDIR@=$(LLVMGCCDIR)=g >> unit.tmp
 	@echo s=@LLVM_BUILD_MODE@=$(BuildMode)=g >> unit.tmp
+	@echo s=@PROJ_LIB_DIR@=$(LibDir)=g >> unit.tmp
 	@echo s=@ENABLE_SHARED@=$(ENABLE_SHARED)=g >> unit.tmp
 	@echo s=@SHLIBDIR@=$(SharedLibDir)=g >> unit.tmp
 	@echo s=@SHLIBPATH_VAR@=$(SHLIBPATH_VAR)=g >> unit.tmp

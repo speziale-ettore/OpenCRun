@@ -5,6 +5,8 @@ config.llvm_tools_dir = "@LLVM_TOOLS_DIR@"
 config.llvmgcc_dir = "@LLVMGCCDIR@"
 config.llvm_build_mode = "@LLVM_BUILD_MODE@"
 
+config.libdir = "@PROJ_LIB_DIR@"
+
 config.enable_shared = @ENABLE_SHARED@
 config.shlibdir = "@SHLIBDIR@"
 config.shlibpath_var = "@SHLIBPATH_VAR@"
