@@ -33,7 +33,7 @@ Context::Context(Platform &Plat,
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs;
 
     DiagIDs = new clang::DiagnosticIDs();
-    Diag.reset(new clang::Diagnostic(DiagIDs, DiagClient));
+    Diag.reset(new clang::DiagnosticsEngine(DiagIDs, DiagClient));
   }
 }
 
@@ -127,7 +127,7 @@ void Context::ReportDiagnostic(llvm::StringRef Msg) {
   if(Diag) {
     llvm::sys::ScopedLock Lock(DiagLock);
 
-    Diag->Report(Diag->getCustomDiagID(clang::Diagnostic::Error, Msg));
+    Diag->Report(Diag->getCustomDiagID(clang::DiagnosticsEngine::Error, Msg));
   }
 
   UserDiag.Notify(Msg);

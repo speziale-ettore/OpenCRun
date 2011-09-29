@@ -34,7 +34,7 @@ Device::Device(llvm::StringRef Name, llvm::StringRef Triple) :
 }
 
 bool Device::TranslateToBitCode(llvm::StringRef Opts,
-                                clang::DiagnosticClient &Diag,
+                                clang::DiagnosticConsumer &Diag,
                                 llvm::MemoryBuffer &Src,
                                 llvm::Module *&Mod) {
   llvm::sys::ScopedLock Lock(ThisLock);
@@ -70,7 +70,7 @@ void Device::InitDiagnostic() {
   llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs;
 
   DiagIDs = new clang::DiagnosticIDs();
-  CompilerDiag = new clang::Diagnostic(DiagIDs);
+  CompilerDiag = new clang::DiagnosticsEngine(DiagIDs);
 }
 
 void Device::InitLibrary() {

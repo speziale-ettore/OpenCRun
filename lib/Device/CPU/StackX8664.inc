@@ -134,7 +134,7 @@ void NotReachable() {
 }
 
 // void SwitchWorkItem()
-__asm__ __volatile__(
+__asm__ (
 "SwitchWorkItem:\n"
 // Get current stack base.
 "  callq GetCurrentWorkItemStack\n"
@@ -182,7 +182,7 @@ __asm__ __volatile__(
 );
 
 // void WorkItemLauncher()
-__asm__ __volatile__(
+__asm__ (
 "WorkItemLauncher:\n"
 "  movq -8(%rbp), %rdi\n" // Load args.
 "  callq *(%rbp)\n"       // Call kernel.

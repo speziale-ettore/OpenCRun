@@ -110,7 +110,7 @@ private:
 
   llvm::sys::Mutex DiagLock;
   clang::DiagnosticOptions DiagOptions;
-  llvm::OwningPtr<clang::Diagnostic> Diag;
+  llvm::OwningPtr<clang::DiagnosticsEngine> Diag;
 };
 
 } // End namespace opencrun.

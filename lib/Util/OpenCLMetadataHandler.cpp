@@ -86,8 +86,8 @@ private:
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs;
     DiagIDs = new clang::DiagnosticIDs();
 
-    clang::DiagnosticClient *DiagClient = new clang::DiagnosticClient();
-    clang::Diagnostic *Diag = new clang::Diagnostic(DiagIDs, DiagClient);
+    clang::DiagnosticsEngine *Diag;
+    Diag = new clang::DiagnosticsEngine(DiagIDs, NULL);
 
     TargetInfo.reset(clang::TargetInfo::CreateTargetInfo(*Diag, TargetOpts));
 

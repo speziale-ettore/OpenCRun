@@ -135,7 +135,7 @@ void NotReachable() {
 }
 
 // void SwitchWorkItem()
-__asm__ __volatile__(
+__asm__ (
 "SwitchWorkItem:\n"
 // Get current stack base.
 "  calll GetCurrentWorkItemStack\n"
@@ -181,7 +181,7 @@ __asm__ __volatile__(
 );
 
 // void WorkItemLauncher()
-__asm__ __volatile__(
+__asm__ (
 "WorkItemLauncher:\n"
 "  subl $12, %esp\n"      // Make space for argument.
 "  movl -4(%ebp), %eax\n" // Copy argument first in a temporary.

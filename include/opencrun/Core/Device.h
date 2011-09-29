@@ -346,7 +346,7 @@ public:
   virtual bool Submit(Command &Cmd) = 0;
 
   bool TranslateToBitCode(llvm::StringRef Opts,
-                          clang::DiagnosticClient &Diag,
+                          clang::DiagnosticConsumer &Diag,
                           llvm::MemoryBuffer &Src,
                           llvm::Module *&Mod);
   virtual void UnregisterKernel(Kernel &Kern) { }
@@ -369,7 +369,7 @@ private:
 
   // CompilerDiag is shared with clang::CompilerInstance objects, so we need
   // reference counting.
-  llvm::IntrusiveRefCntPtr<clang::Diagnostic> CompilerDiag;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> CompilerDiag;
 
   std::string Triple;
   std::string SystemResourcePath;

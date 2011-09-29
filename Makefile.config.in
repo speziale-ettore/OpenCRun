@@ -18,3 +18,8 @@ PROJ_OBJ_ROOT := $(subst //,/,@abs_top_objdir@)
 
 # Set the root directory of this project's install prefix
 PROJ_INSTALL_ROOT := @prefix@
+
+# Temporary hack to let building bit-code modules.
+LLVMCC_OPTION := clang
+LLVMCC_EMITIR_FLAG := -emit-llvm
+CLANGPATH := clang

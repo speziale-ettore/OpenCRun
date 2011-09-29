@@ -4,7 +4,7 @@
 #include "opencrun/Core/Device.h"
 #include "opencrun/Core/Kernel.h"
 
-#include "clang/Frontend/ChainedDiagnosticClient.h"
+#include "clang/Frontend/ChainedDiagnosticConsumer.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Frontend/TextDiagnosticBuffer.h"
 
@@ -164,8 +164,8 @@ cl_int Program::Build(Device &Dev, llvm::StringRef Opts) {
   clang::TextDiagnosticBuffer *ToCtx = new clang::TextDiagnosticBuffer();
 
   // Chain diagnostics.
-  clang::ChainedDiagnosticClient *Diag;
-  Diag = new clang::ChainedDiagnosticClient(ToLog, ToCtx);
+  clang::ChainedDiagnosticConsumer *Diag;
+  Diag = new clang::ChainedDiagnosticConsumer(ToLog, ToCtx);
 
   // Build in progress.
   Info.RegisterBuildInProgress();
