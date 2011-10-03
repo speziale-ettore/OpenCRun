@@ -7,7 +7,6 @@
 
 using namespace opencrun;
 
-#include "llvm/Support/raw_ostream.h"
 bool AggressiveInliner::runOnSCC(llvm::CallGraphSCC &SCC) {
   // More than one entry in the SCC, cannot be inlined.
   if(!SCC.isSingular())

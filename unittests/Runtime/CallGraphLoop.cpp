@@ -39,6 +39,7 @@ TYPED_TEST_P(CallGraphLoopTest, Fact) {
                              cl::NDRange(1),
                              NULL,
                              &Ev);
+  Ev.wait();
 
   // Store the exit status in a separate variable to avoid a compiler warning.
   cl_int exitStatus = Ev.getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>();
