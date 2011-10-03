@@ -7,8 +7,11 @@
 namespace opencrun {
 
 class FootprintEstimator;
+class AggressiveInliner;
 
 FootprintEstimator *CreateFootprintEstimatorPass(llvm::StringRef Kernel = "");
+
+AggressiveInliner *CreateAggressiveInlinerPass(llvm::StringRef Kernel = "");
 
 } // End namespace opencrun.
 
