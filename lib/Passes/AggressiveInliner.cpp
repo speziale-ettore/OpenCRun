@@ -7,11 +7,21 @@
 
 using namespace opencrun;
 
+#include "llvm/Support/raw_ostream.h"
 bool AggressiveInliner::runOnSCC(llvm::CallGraphSCC &SCC) {
-  if(!SCC.isSingular()) {
-    NotAForest = true;
-    return false;
+  // More than one entry in the SCC, cannot be inlined.
+  if(!SCC.isSingular())
+    AllInlined = false;
+
+  // Recursive self-calling, cannot be inlined.
+  else {
+    llvm::CallGraphNode &CurNode = **SCC.begin();
+    for(unsigned I = 0, E = CurNode.size(); I != E && AllInlined; ++I)
+      AllInlined = (CurNode[I] != &CurNode);
   }
+
+  if(!AllInlined)
+    return false;
 
   return llvm::Inliner::runOnSCC(SCC);
 }

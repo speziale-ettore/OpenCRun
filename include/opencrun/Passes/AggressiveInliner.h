@@ -20,7 +20,7 @@ public:
   AggressiveInliner(llvm::StringRef Kernel = "") :
     llvm::Inliner(ID, INT_MIN),
     Kernel(GetKernelOption(Kernel)),
-    NotAForest(false) { }
+    AllInlined(true) { }
 
 public:
   virtual bool runOnSCC(llvm::CallGraphSCC &SCC);
@@ -50,13 +50,13 @@ public:
   virtual bool doFinalization(llvm::CallGraph &CG);
 
 public:
-  bool IsAllInlined() const { return NotAForest; }
+  bool IsAllInlined() const { return AllInlined; }
 
 private:
   std::string Kernel;
 
   llvm::SmallPtrSet<const llvm::Function *, 16> NotVisit;
-  bool NotAForest;
+  bool AllInlined;
 };
 
 } // End namespace opencrun.

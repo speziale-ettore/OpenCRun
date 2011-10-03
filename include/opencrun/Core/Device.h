@@ -354,6 +354,8 @@ public:
 private:
   void InitDiagnostic();
   void InitLibrary();
+  void InitCompiler();
+
   void BuildCompilerInvocation(llvm::StringRef UserOpts,
                                llvm::MemoryBuffer &Src,
                                clang::CompilerInvocation &Invocation);

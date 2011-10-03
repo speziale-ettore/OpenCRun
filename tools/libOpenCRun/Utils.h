@@ -2,6 +2,7 @@
 #ifndef LIBOPENCRUN_UTILS_H
 #define LIBOPENCRUN_UTILS_H
 
+#include "opencrun/Core/CommandQueue.h"
 #include "opencrun/Core/Context.h"
 #include "opencrun/Core/Device.h"
 #include "opencrun/Core/Platform.h"
@@ -47,8 +48,15 @@ ParamTy clReadValue(FunTy Src) {
 CL_OBJECT_READ_VALUE(cl_platform_id, opencrun::Platform)
 CL_OBJECT_READ_VALUE(cl_device_id, opencrun::Device)
 CL_OBJECT_READ_VALUE(cl_context, opencrun::Context)
+CL_OBJECT_READ_VALUE(cl_command_queue, opencrun::CommandQueue)
 CL_OBJECT_READ_VALUE(cl_program, opencrun::Program)
 #undef CL_OBJECT_READ_VALUE
+
+template <> inline
+cl_command_type clReadValue<cl_command_type,
+                            opencrun::Command &>(opencrun::Command &Cmd) {
+  return Cmd.GetType();
+}
 
 template <typename ParamTy, typename FunTy>
 cl_int clFillValue(ParamTy *Dst,

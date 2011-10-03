@@ -423,6 +423,10 @@ int CPUThread::Execute(NDRangeKernelBlockCPUCommand &Cmd) {
   NDRangeKernelBlockCPUCommand::Signature Func = Cmd.GetFunction();
   void **Args = Cmd.GetArgumentsPointer();
 
+  // Entry point not available, error!
+  if(!Func)
+    return CPUCommand::InvalidExecutable;
+
   // Save first and last work item to execute.
   Begin = Cmd.index_begin();
   End = Cmd.index_end();

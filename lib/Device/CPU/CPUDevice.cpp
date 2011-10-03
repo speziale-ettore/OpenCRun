@@ -1,8 +1,10 @@
 
 #include "opencrun/Device/CPU/CPUDevice.h"
-#include "opencrun/Device/CPU/InternalCalls.h"
 #include "opencrun/Core/Event.h"
+#include "opencrun/Device/CPU/InternalCalls.h"
 #include "opencrun/Device/CPUPasses/AllPasses.h"
+#include "opencrun/Passes/AggressiveInliner.h"
+#include "opencrun/Passes/AllPasses.h"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/PassManager.h"
@@ -352,10 +354,18 @@ CPUDevice::GetBlockParallelEntryPoint(Kernel &Kern) {
   llvm::Module &Mod = *Kern.GetModule(*this);
   llvm::StringRef KernName = Kern.GetName();
 
-  // Build the entry point.
+  // The aggressive inliner cache info about call graph shape.
+  AggressiveInliner *Inliner = CreateAggressiveInlinerPass(KernName);
+
+  // Build the entry point and optimize.
   llvm::PassManager PM;
+  PM.add(Inliner);
   PM.add(CreateGroupParallelStubPass(KernName));
   PM.run(Mod);
+
+  // Check whether there was a problem at inline time.
+  if(!Inliner->IsAllInlined())
+    return NULL;
 
   // Retrieve it.
   std::string EntryName = MangleBlockParallelKernelName(KernName);

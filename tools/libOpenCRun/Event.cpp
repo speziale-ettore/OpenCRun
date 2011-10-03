@@ -1,6 +1,8 @@
 
 #include "CL/opencl.h"
 
+#include "Utils.h"
+
 #include "opencrun/Core/Event.h"
 
 #include "llvm/Support/ErrorHandling.h"
@@ -45,8 +47,57 @@ clGetEventInfo(cl_event event,
                size_t param_value_size,
                void *param_value,
                size_t *param_value_size_ret) CL_API_SUFFIX__VERSION_1_0 {
-  llvm_unreachable("Not yet implemented");
-  return CL_SUCCESS;
+  if(!event)
+    return CL_INVALID_EVENT;
+
+  opencrun::Event &Ev = *llvm::cast<opencrun::Event>(event);
+  switch(param_name) {
+  #define PROPERTY(PARAM, FUN, PARAM_TY, FUN_TY)   \
+  case PARAM: {                                    \
+    return clFillValue<PARAM_TY, FUN_TY>(          \
+             static_cast<PARAM_TY *>(param_value), \
+             Ev.FUN(),                             \
+             param_value_size,                     \
+             param_value_size_ret);                \
+  }
+  #include "EventProperties.def"
+  #undef PROPERTY
+
+  case CL_EVENT_COMMAND_QUEUE: {
+    opencrun::CommandQueue *Queue;
+
+    if(opencrun::InternalEvent *InternalEv =
+        llvm::dyn_cast<opencrun::InternalEvent>(&Ev))
+      Queue = &InternalEv->GetCommandQueue();
+    else
+      Queue = NULL;
+
+    return clFillValue<cl_command_queue,
+                       opencrun::CommandQueue &>(
+             static_cast<cl_command_queue *>(param_value),
+             *Queue,
+             param_value_size,
+             param_value_size_ret);
+  }
+
+  case CL_EVENT_COMMAND_TYPE: {
+    opencrun::InternalEvent *InternalEv;
+    InternalEv = llvm::dyn_cast<opencrun::InternalEvent>(&Ev);
+
+    if(!InternalEv)
+      return CL_INVALID_VALUE;
+
+    return clFillValue<cl_command_type,
+                       opencrun::Command &>(
+             static_cast<cl_command_type *>(param_value),
+             InternalEv->GetCommand(),
+             param_value_size,
+             param_value_size_ret);
+  }
+
+  default:
+    return CL_INVALID_VALUE;
+  }
 }
 
 CL_API_ENTRY cl_event CL_API_CALL

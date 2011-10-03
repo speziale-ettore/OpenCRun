@@ -31,6 +31,7 @@ Device::Device(llvm::StringRef Name, llvm::StringRef Triple) :
   // Initialize the device.
   InitDiagnostic();
   InitLibrary();
+  InitCompiler();
 }
 
 bool Device::TranslateToBitCode(llvm::StringRef Opts,
@@ -108,6 +109,19 @@ void Device::InitLibrary() {
                           "clang",
                           CLANG_VERSION_STRING);
   SystemResourcePath = Path.str();
+}
+
+void Device::InitCompiler() {
+  llvm::PassRegistry &Registry = *llvm::PassRegistry::getPassRegistry();
+
+  llvm::initializeCore(Registry);
+  llvm::initializeScalarOpts(Registry);
+  llvm::initializeIPO(Registry);
+  llvm::initializeAnalysis(Registry);
+  llvm::initializeIPA(Registry);
+  llvm::initializeTransformUtils(Registry);
+  llvm::initializeInstCombine(Registry);
+  llvm::initializeInstrumentation(Registry);
 }
 
 void Device::BuildCompilerInvocation(llvm::StringRef UserOpts,

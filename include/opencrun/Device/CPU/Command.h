@@ -24,8 +24,9 @@ public:
   };
 
   enum {
-    NoError     = CL_COMPLETE,
-    Unsupported = CL_INVALID_OPERATION
+    NoError           = CL_COMPLETE,
+    InvalidExecutable = CL_INVALID_PROGRAM_EXECUTABLE,
+    Unsupported       = CL_INVALID_OPERATION
   };
 
 public:

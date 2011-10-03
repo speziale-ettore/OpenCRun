@@ -33,6 +33,8 @@ public:
 public:
   virtual Context &GetContext() const = 0;
 
+  int GetStatus() const { return Status; }
+
   bool HasCompleted() const { return Status == CL_COMPLETE || Status < 0; }
   bool IsError() const { return Status < 0; }
 
@@ -46,7 +48,7 @@ private:
 
   // Positive values are normal status. Negative values are platform/runtime
   // errors. See OpenCL specs, version 1.1, table 5.15.
-  int Status;
+  volatile int Status;
 
   sys::Monitor Monitor;
 };
@@ -68,6 +70,7 @@ public:
 
 public:
   Context &GetContext() const;
+  CommandQueue &GetCommandQueue() const { return *Queue; }
   Command &GetCommand() const { return Cmd; }
 
   bool IsProfiled() const { return Profile.IsEnabled(); }

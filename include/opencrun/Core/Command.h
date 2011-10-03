@@ -24,10 +24,10 @@ class MemoryObj;
 class Command {
 public:
   enum Type {
-    ReadBuffer,
-    WriteBuffer,
-    NDRangeKernel,
-    NativeKernel
+    ReadBuffer = CL_COMMAND_READ_BUFFER,
+    WriteBuffer = CL_COMMAND_WRITE_BUFFER,
+    NDRangeKernel = CL_COMMAND_NDRANGE_KERNEL,
+    NativeKernel = CL_COMMAND_NATIVE_KERNEL
   };
 
 public:
