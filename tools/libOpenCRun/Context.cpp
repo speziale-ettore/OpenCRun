@@ -209,8 +209,13 @@ static bool clParseProperties(
 
     switch(Name) {
     case CL_CONTEXT_PLATFORM:
-      if(!reinterpret_cast<cl_platform_id>(Value))
-        RETURN_WITH_FLAG(errcode_ret, CL_INVALID_PLATFORM);
+      // The OpenCL specification states that when a NULL value is given, the
+      // behavior is implementation specific. Use the AMD convention, and use
+      // the default platform.
+      if(!reinterpret_cast<cl_platform_id>(Value)) {
+        opencrun::Platform &Plat = opencrun::GetOpenCRunPlatform();
+        Value = reinterpret_cast<cl_context_properties>(&Plat);
+      }
       break;
 
     default:

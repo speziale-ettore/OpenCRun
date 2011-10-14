@@ -97,8 +97,21 @@ TEST_F(ContextTest, NullPropertiesNotSupported) {
   cl_int ErrCodeA, ErrCodeB;
 
   cl::Context CtxA(Devs, NULL, NULL, NULL, &ErrCodeA);
-  cl::Context CtxB(Devs, NULL, NULL, NULL, &ErrCodeB);
+  cl::Context CtxB(CL_DEVICE_TYPE_CPU, NULL, NULL, NULL, &ErrCodeB);
 
   EXPECT_EQ(CL_INVALID_PLATFORM, ErrCodeA);
   EXPECT_EQ(CL_INVALID_PLATFORM, ErrCodeB);
+}
+
+TEST_F(ContextTest, NullPlatformSupported) {
+  cl_context_properties Props[] = { CL_CONTEXT_PLATFORM, NULL, 0 };
+
+  std::vector<cl::Device> Devs(1, GetDevice());
+  cl_int ErrCodeA, ErrCodeB;
+
+  cl::Context CtxA(Devs, Props, NULL, NULL, &ErrCodeA);
+  cl::Context CtxB(CL_DEVICE_TYPE_CPU, Props, NULL, NULL, &ErrCodeB);
+
+  EXPECT_EQ(CL_SUCCESS, ErrCodeA);
+  EXPECT_EQ(CL_SUCCESS, ErrCodeB);
 }
