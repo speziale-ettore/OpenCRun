@@ -104,7 +104,14 @@ TEST_F(ContextTest, NullPropertiesNotSupported) {
 }
 
 TEST_F(ContextTest, NullPlatformSupported) {
-  cl_context_properties Props[] = { CL_CONTEXT_PLATFORM, NULL, 0 };
+  // Set Plat to NULL here in to silence compiler warning.
+  cl_platform_id Plat = NULL;
+
+  cl_context_properties Props[3];
+
+  Props[0] = CL_CONTEXT_PLATFORM;
+  Props[1] = reinterpret_cast<cl_context_properties>(Plat);
+  Props[2] = 0;
 
   std::vector<cl::Device> Devs(1, GetDevice());
   cl_int ErrCodeA, ErrCodeB;
