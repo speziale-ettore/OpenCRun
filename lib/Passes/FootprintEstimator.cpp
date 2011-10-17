@@ -197,10 +197,20 @@ size_t FootprintEstimator::GetSizeLowerBound(llvm::Type &Ty) {
 
 char FootprintEstimator::ID = 0;
 
-static llvm::RegisterPass<FootprintEstimator> X("footprint-estimator",
-                                                "Estimate kernel footprint");
-
 FootprintEstimator *
 opencrun::CreateFootprintEstimatorPass(llvm::StringRef Kernel) {
   return new FootprintEstimator(Kernel);
 }
+
+using namespace llvm;
+
+INITIALIZE_PASS_BEGIN(FootprintEstimator,
+                      "footprint-estimator",
+                      "Estimate kernel footprint",
+                      false,
+                      false)
+INITIALIZE_PASS_END(FootprintEstimator,
+                    "footprint-estimator",
+                    "Estimate kernel footprint",
+                    false,
+                    false)

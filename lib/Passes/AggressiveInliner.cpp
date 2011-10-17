@@ -72,10 +72,20 @@ bool AggressiveInliner::doFinalization(llvm::CallGraph &CG) {
 
 char AggressiveInliner::ID = 0;
 
-static llvm::RegisterPass<AggressiveInliner> X("aggressive-inliner",
-                                               "Inline all possible functions");
-
 AggressiveInliner *
 opencrun::CreateAggressiveInlinerPass(llvm::StringRef Kernel) {
   return new AggressiveInliner(Kernel);
 }
+
+using namespace llvm;
+
+INITIALIZE_PASS_BEGIN(AggressiveInliner,
+                      "aggressive-inliner",
+                      "Inline alla possible functions",
+                      false,
+                      false)
+INITIALIZE_PASS_END(AggressiveInliner,
+                    "aggressive-inliner",
+                    "Inline alla possible functions",
+                    false,
+                    false)

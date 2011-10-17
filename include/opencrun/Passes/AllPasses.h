@@ -17,4 +17,14 @@ AggressiveInliner *CreateAggressiveInlinerPass(llvm::StringRef Kernel = "");
 
 extern "C" void LinkInOpenCRunPasses();
 
+namespace llvm {
+
+class PassRegistry;
+
+void initializeFootprintEstimatorPass(PassRegistry &Registry);
+
+void initializeAggressiveInlinerPass(PassRegistry &Registry);
+
+} // End namespace llvm.
+
 #endif // OPENCRUN_DEVICE_PASSES_ALLPASSES_H
