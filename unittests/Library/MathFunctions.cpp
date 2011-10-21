@@ -77,6 +77,59 @@ TYPED_TEST_P(MathFunctionsTest, acospi) {
   ASSERT_GENTYPE_EQ(Expected, Output);
 }
 
+TYPED_TEST_P(MathFunctionsTest, asin) {
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
+
+  Input = GENTYPE_CREATE(-1);
+  Expected = GENTYPE_CREATE(-M_PI_2);
+  this->Invoke("asin", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  Input = GENTYPE_CREATE(0);
+  Expected = GENTYPE_CREATE(0);
+  this->Invoke("asin", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  Input = GENTYPE_CREATE(1);
+  Expected = GENTYPE_CREATE(M_PI_2);
+  this->Invoke("asin", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+}
+
+TYPED_TEST_P(MathFunctionsTest, asinh) {
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
+
+  Input = GENTYPE_CREATE(0);
+  Expected = GENTYPE_CREATE(0);
+  this->Invoke("asinh", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Input);
+}
+
+TYPED_TEST_P(MathFunctionsTest, asinpi) {
+  GENTYPE_DECLARE(Input);
+  GENTYPE_DECLARE(Expected);
+  GENTYPE_DECLARE(Output);
+
+  Input = GENTYPE_CREATE(-1);
+  Expected = GENTYPE_CREATE(-0.5);
+  this->Invoke("asinpi", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  Input = GENTYPE_CREATE(0);
+  Expected = GENTYPE_CREATE(0);
+  this->Invoke("asinpi", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+
+  Input = GENTYPE_CREATE(1);
+  Expected = GENTYPE_CREATE(0.5);
+  this->Invoke("asinpi", Output, Input);
+  ASSERT_GENTYPE_EQ(Expected, Output);
+}
+
 // TODO: fill the gap.
 
 TYPED_TEST_P(MathFunctionsTest, cos) {
@@ -170,6 +223,9 @@ TYPED_TEST_P(MathFunctionsTest, sqrt) {
 REGISTER_TYPED_TEST_CASE_P(MathFunctionsTest, acos,
                                               acosh,
                                               acospi,
+                                              asin,
+                                              asinh,
+                                              asinpi,
 // TODO: fill the gap.
                                               cos,
 // TODO: fill the gap.
