@@ -187,10 +187,10 @@ index 78fd6f1..19e6589 100644
    stdarg.h
 diff --git a/lib/Headers/ocldef.h b/lib/Headers/ocldef.h
 new file mode 100644
-index 0000000..883f980
+index 0000000..05a0588
 --- /dev/null
 +++ b/lib/Headers/ocldef.h
-@@ -0,0 +1,205 @@
+@@ -0,0 +1,241 @@
 +//===- TableGen'erated file -------------------------------------*- C++ -*-===//
 +//
 +// OpenCL C library definitions.
@@ -334,6 +334,39 @@ index 0000000..883f980
 +float16 __builtin_ocl_acospi(float16 x0);
 +
 +__attribute__((overloadable,pure))
++float __builtin_ocl_asin(float x0);
++__attribute__((overloadable,pure))
++float2 __builtin_ocl_asin(float2 x0);
++__attribute__((overloadable,pure))
++float4 __builtin_ocl_asin(float4 x0);
++__attribute__((overloadable,pure))
++float8 __builtin_ocl_asin(float8 x0);
++__attribute__((overloadable,pure))
++float16 __builtin_ocl_asin(float16 x0);
++
++__attribute__((overloadable,pure))
++float __builtin_ocl_asinh(float x0);
++__attribute__((overloadable,pure))
++float2 __builtin_ocl_asinh(float2 x0);
++__attribute__((overloadable,pure))
++float4 __builtin_ocl_asinh(float4 x0);
++__attribute__((overloadable,pure))
++float8 __builtin_ocl_asinh(float8 x0);
++__attribute__((overloadable,pure))
++float16 __builtin_ocl_asinh(float16 x0);
++
++__attribute__((overloadable,pure))
++float __builtin_ocl_asinpi(float x0);
++__attribute__((overloadable,pure))
++float2 __builtin_ocl_asinpi(float2 x0);
++__attribute__((overloadable,pure))
++float4 __builtin_ocl_asinpi(float4 x0);
++__attribute__((overloadable,pure))
++float8 __builtin_ocl_asinpi(float8 x0);
++__attribute__((overloadable,pure))
++float16 __builtin_ocl_asinpi(float16 x0);
++
++__attribute__((overloadable,pure))
 +float __builtin_ocl_cos(float x0);
 +__attribute__((overloadable,pure))
 +float2 __builtin_ocl_cos(float2 x0);
@@ -384,6 +417,9 @@ index 0000000..883f980
 +#define acos __builtin_ocl_acos
 +#define acosh __builtin_ocl_acosh
 +#define acospi __builtin_ocl_acospi
++#define asin __builtin_ocl_asin
++#define asinh __builtin_ocl_asinh
++#define asinpi __builtin_ocl_asinpi
 +#define cos __builtin_ocl_cos
 +#define exp __builtin_ocl_exp
 +#define sin __builtin_ocl_sin
