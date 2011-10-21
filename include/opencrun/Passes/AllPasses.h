@@ -6,10 +6,10 @@
 
 namespace opencrun {
 
-class FootprintEstimator;
+class FootprintEstimate;
 class AggressiveInliner;
 
-FootprintEstimator *CreateFootprintEstimatorPass(llvm::StringRef Kernel = "");
+FootprintEstimate *CreateFootprintEstimatePass(llvm::StringRef Kernel = "");
 
 AggressiveInliner *CreateAggressiveInlinerPass(llvm::StringRef Kernel = "");
 
@@ -21,7 +21,7 @@ namespace llvm {
 
 class PassRegistry;
 
-void initializeFootprintEstimatorPass(PassRegistry &Registry);
+void initializeFootprintEstimatePass(PassRegistry &Registry);
 
 void initializeAggressiveInlinerPass(PassRegistry &Registry);
 

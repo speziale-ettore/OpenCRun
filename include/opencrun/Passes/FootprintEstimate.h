@@ -1,6 +1,6 @@
 
-#ifndef OPENCRUN_PASSES_FOOTPRINTESTIMATOR_H
-#define OPENCRUN_PASSES_FOOTPRINTESTIMATOR_H
+#ifndef OPENCRUN_PASSES_FOOTPRINTESTIMATE_H
+#define OPENCRUN_PASSES_FOOTPRINTESTIMATE_H
 
 #include "opencrun/Util/PassOptions.h"
 
@@ -16,15 +16,6 @@ public:
   Footprint() : LocalMemoryUsage(0),
                 PrivateMemoryUsage(0),
                 TempMemoryUsage(0) { }
-
-public:
-  void AddPrivateMemoryUsage(size_t Usage) {
-    PrivateMemoryUsage += Usage;
-  }
-
-  void AddTempMemoryUsage(size_t Usage) {
-    TempMemoryUsage += Usage;
-  }
 
 public:
   size_t GetMaxWorkGroupSize(size_t AvailablePrivateMemory) const {
@@ -66,29 +57,35 @@ public:
     return Accuracy;
   }
 
+protected:
+  void AddPrivateMemoryUsage(size_t Usage) {
+    PrivateMemoryUsage += Usage;
+  }
+
+  void AddTempMemoryUsage(size_t Usage) {
+    TempMemoryUsage += Usage;
+  }
+
 private:
   size_t LocalMemoryUsage;
   size_t PrivateMemoryUsage;
   size_t TempMemoryUsage;
 };
 
-class FootprintEstimator : public llvm::ModulePass {
+class FootprintEstimate : public Footprint, public llvm::FunctionPass {
 public:
   static char ID;
 
 public:
-  typedef std::map<llvm::Function *, Footprint> FootprintContainer;
-
-public:
-  FootprintEstimator(llvm::StringRef Kernel = "") :
-    llvm::ModulePass(ID),
+  FootprintEstimate(llvm::StringRef Kernel = "") :
+    llvm::FunctionPass(ID),
     Kernel(GetKernelOption(Kernel)) { }
 
 public:
-  virtual bool runOnModule(llvm::Module &Mod);
+  virtual bool runOnFunction(llvm::Function &Fun);
 
   virtual const char *getPassName() const {
-    return "Footprint estimator";
+    return "Footprint estimate";
   }
 
   virtual void print(llvm::raw_ostream &OS,
@@ -101,27 +98,15 @@ public:
     // complex, then some verification code should be written.
   }
 
-public:
-  Footprint *GetFootprint(llvm::Function &Kern) {
-    if(!Footprints.count(&Kern))
-      return NULL;
-
-   return &Footprints[&Kern];
-  }
-
 private:
-  void AnalyzeKernel(llvm::Function &Kern);
-
-  bool AnalyzeMemoryUsage(llvm::Instruction &I, Footprint &Data);
+  void AnalyzeMemoryUsage(llvm::Instruction &I);
 
   size_t GetSizeLowerBound(llvm::Type &Ty);
 
 private:
   std::string Kernel;
-
-  FootprintContainer Footprints;
 };
 
 } // End namespace opencrun.
 
-#endif // OPENCRUN_PASSES_FOOTPRINTESTIMATOR_H
+#endif // OPENCRUN_PASSES_FOOTPRINTESTIMATE_H

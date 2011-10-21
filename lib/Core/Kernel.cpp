@@ -184,13 +184,13 @@ Device *Kernel::RequireEstimates(Device *Dev) {
   if(!Estimates) {
     llvm::PassManager PM;
 
-    FootprintEstimator *Pass = CreateFootprintEstimatorPass(GetName());
+    FootprintEstimate *Pass = CreateFootprintEstimatePass(GetName());
     llvm::Function *Fun = GetFunction(*Dev);
 
     PM.add(Pass);
     PM.run(*Fun->getParent());
 
-    Estimates.reset(new Footprint(*Pass->GetFootprint(*Fun)));
+    Estimates.reset(new Footprint(*Pass));
   }
 
   return Dev;

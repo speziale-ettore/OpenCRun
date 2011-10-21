@@ -1,6 +1,6 @@
 
 ; RUN: opt -load %projshlibdir/OpenCRunPasses.so \
-; RUN:     -footprint-estimator                  \
+; RUN:     -footprint-estimate                   \
 ; RUN:     -analyze                              \
 ; RUN:     -S -o - %s | FileCheck %s
 ; REQUIRES: loadable_module
@@ -16,8 +16,7 @@ entry:
   ret void
 }
 
-; CHECK:      Kernel: foo
-; CHECK-NEXT:   Private memory: 62 bytes (min), 1.00000 (accuracy)
+; CHECK: Private memory: 62 bytes (min), 1.00000 (accuracy)
 
 !opencl.kernels = !{!0}
 !opencl.global_address_space = !{!2}

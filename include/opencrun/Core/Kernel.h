@@ -6,7 +6,7 @@
 
 #include "opencrun/Core/MemoryObj.h"
 #include "opencrun/Core/Program.h"
-#include "opencrun/Passes/FootprintEstimator.h"
+#include "opencrun/Passes/FootprintEstimate.h"
 #include "opencrun/System/OS.h"
 #include "opencrun/Util/MTRefCounted.h"
 

@@ -1,11 +1,10 @@
 
 #include "opencrun/Passes/AllPasses.h"
-#include "opencrun/Passes/FootprintEstimator.h"
+#include "opencrun/Passes/FootprintEstimate.h"
 #include "opencrun/Util/OpenCLMetadataHandler.h"
 
-#define DEBUG_TYPE "footprint-estimator"
+#define DEBUG_TYPE "footprint-estimate"
 
-#include "llvm/ADT/Statistic.h"
 #include "llvm/Constants.h"
 #include "llvm/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
@@ -14,89 +13,52 @@
 
 using namespace opencrun;
 
-STATISTIC(Kernels, "Number of analyzed kernels");
+bool FootprintEstimate::runOnFunction(llvm::Function &Fun) {
+  OpenCLMetadataHandler MDHandler(*Fun.getParent());
 
-bool FootprintEstimator::runOnModule(llvm::Module &Mod) {
-  OpenCLMetadataHandler MDHandler(Mod);
-
-  llvm::Function *KernelFun;
-
-  if(Kernel != "" && (KernelFun = MDHandler.GetKernel(Kernel)))
-    AnalyzeKernel(*KernelFun);
-
-  else for(OpenCLMetadataHandler::kernel_iterator I = MDHandler.kernel_begin(),
-                                                  E = MDHandler.kernel_end();
-                                                  I != E;
-                                                  ++I)
-    AnalyzeKernel(*I);
+  if(MDHandler.IsKernel(Fun) && (Kernel == Fun.getName() || Kernel == "")) {
+    for(llvm::inst_iterator I = inst_begin(Fun), E = inst_end(Fun); I != E; ++I)
+      AnalyzeMemoryUsage(*I);
+  }
 
   return false;
 }
 
-void FootprintEstimator::print(llvm::raw_ostream &OS,
+void FootprintEstimate::print(llvm::raw_ostream &OS,
                                const llvm::Module *Mod) const {
-  for(FootprintContainer::const_iterator I = Footprints.begin(),
-                                         E = Footprints.end();
-                                         I != E;
-                                         ++I) {
-    llvm::Function &Kern = *I->first;
-    const Footprint &Foot = I->second;
+  // Private memory usage.
 
-    OS << "Kernel: " << Kern.getName() << "\n";
+  size_t PrivateMemoryUsage = GetPrivateMemoryUsage();
+  float PrivateMemoryUsageAcc = GetPrivateMemoryUsageAccuracy();
 
-    // Private memory usage.
+  OS << "Private memory: " << PrivateMemoryUsage
+                           << " bytes (min), "
+     << llvm::format("%1.5f", PrivateMemoryUsageAcc)
+                           << " (accuracy)\n";
 
-    size_t PrivateMemoryUsage = Foot.GetPrivateMemoryUsage();
-    float PrivateMemoryUsageAcc = Foot.GetPrivateMemoryUsageAccuracy();
+  // Some estimates of maximum work-group size.
 
-    OS.indent(2) << "Private memory: " << PrivateMemoryUsage
-                                       << " bytes (min), "
-                 << llvm::format("%1.5f", PrivateMemoryUsageAcc)
-                                       << " (accuracy)\n";
+  // First of all, computed the maximum field width.
+  size_t WIField = std::ceil(std::log10(GetMaxWorkGroupSize(64 * 1024)));
 
-    // Some estimates of maximum work-group size.
+  // Now print all estimates.
+  OS << "Work-group size: ";
+  for(size_t Size = 16; Size <= 64; Size *= 2) {
+    if(Size != 16)
+      OS.indent(19); // 19 = strlen("Work-group size: ") + 2
 
-    // First of all, computed the maximum field width.
-    size_t WIField = std::ceil(std::log10(Foot.GetMaxWorkGroupSize(64 * 1024)));
-
-    // Now print all estimates.
-    OS.indent(2) << "Work-group size: ";
-    for(size_t Size = 16; Size <= 64; Size *= 2) {
-      if(Size != 16)
-        OS.indent(19); // 19 = strlen("Work-group size: ") + 2
-
-      OS << llvm::format("%*zu", WIField, Foot.GetMaxWorkGroupSize(Size * 1024))
-         << " (max), "
-         << llvm::format("%zuKbytes", Size)
-         << " (available private memory)\n";
-    }
+    OS << llvm::format("%*zu", WIField, GetMaxWorkGroupSize(Size * 1024))
+       << " (max), "
+       << llvm::format("%zuKbytes", Size)
+       << " (available private memory)\n";
   }
 }
 
-void FootprintEstimator::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
+void FootprintEstimate::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
   AU.setPreservesAll();
 }
 
-void FootprintEstimator::AnalyzeKernel(llvm::Function &Kern) {
-  Footprint Data;
-  bool Err = false;
-
-  // Analyze the kernel.
-  for(llvm::inst_iterator I = inst_begin(Kern),
-                          E = inst_end(Kern);
-                          I != E && !Err;
-                          ++I)
-    Err = AnalyzeMemoryUsage(*I, Data);
-
-  // Do not keep information about malformed kernels.
-  if(!Err) {
-    Footprints[&Kern] = Data;
-    ++Kernels;
-  }
-}
-
-bool FootprintEstimator::AnalyzeMemoryUsage(llvm::Instruction &I,
-                                            Footprint &Data) {
+void FootprintEstimate::AnalyzeMemoryUsage(llvm::Instruction &I) {
   // There are restrictions on the functions we can call.
   if(llvm::CallInst *Call = llvm::dyn_cast<llvm::CallInst>(&I)) {
     llvm::Function *Fun = Call->getCalledFunction();
@@ -106,10 +68,10 @@ bool FootprintEstimator::AnalyzeMemoryUsage(llvm::Instruction &I,
     // functions to call are external functions -- typically internal
     // calls/runtime builtins.
     if(!Fun || !Fun->hasExternalLinkage())
-      return true;
+      return;
 
     // Add the function return value.
-    Data.AddTempMemoryUsage(GetSizeLowerBound(*Call->getType()));
+    AddTempMemoryUsage(GetSizeLowerBound(*Call->getType()));
   }
 
   // Alloca instruction will be mapped on private memory.
@@ -121,21 +83,15 @@ bool FootprintEstimator::AnalyzeMemoryUsage(llvm::Instruction &I,
     if(llvm::ConstantInt *Els = llvm::dyn_cast<llvm::ConstantInt>(ElsVal)) {
       llvm::Type *Ty = Alloca->getAllocatedType();
 
-      Data.AddPrivateMemoryUsage(Els->getZExtValue() * GetSizeLowerBound(*Ty));
+      AddPrivateMemoryUsage(Els->getZExtValue() * GetSizeLowerBound(*Ty));
     }
-
-    // Hand-written alloca, illegal in OpenCL.
-    else
-      return true;
 
   // Other instructions can produce a value. It is temporary.
   } else
-    Data.AddTempMemoryUsage(GetSizeLowerBound(*I.getType()));
-
-  return false;
+    AddTempMemoryUsage(GetSizeLowerBound(*I.getType()));
 }
 
-size_t FootprintEstimator::GetSizeLowerBound(llvm::Type &Ty) {
+size_t FootprintEstimate::GetSizeLowerBound(llvm::Type &Ty) {
   // This pass operates on the intermediate code, e.g. we have not access to
   // target information, so we have to estimate the actual value using
   // the size of the LLVM types.
@@ -195,22 +151,22 @@ size_t FootprintEstimator::GetSizeLowerBound(llvm::Type &Ty) {
   return 0;
 }
 
-char FootprintEstimator::ID = 0;
+char FootprintEstimate::ID = 0;
 
-FootprintEstimator *
-opencrun::CreateFootprintEstimatorPass(llvm::StringRef Kernel) {
-  return new FootprintEstimator(Kernel);
+FootprintEstimate *
+opencrun::CreateFootprintEstimatePass(llvm::StringRef Kernel) {
+  return new FootprintEstimate(Kernel);
 }
 
 using namespace llvm;
 
-INITIALIZE_PASS_BEGIN(FootprintEstimator,
-                      "footprint-estimator",
+INITIALIZE_PASS_BEGIN(FootprintEstimate,
+                      "footprint-estimate",
                       "Estimate kernel footprint",
                       false,
                       false)
-INITIALIZE_PASS_END(FootprintEstimator,
-                    "footprint-estimator",
+INITIALIZE_PASS_END(FootprintEstimate,
+                    "footprint-estimate",
                     "Estimate kernel footprint",
                     false,
                     false)

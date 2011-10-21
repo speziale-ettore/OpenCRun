@@ -129,6 +129,8 @@ public:
 
   llvm::Function *GetBuiltin(llvm::StringRef Name);
 
+  bool IsKernel(llvm::Function &Fun) const { return GetKernel(Fun.getName()); }
+
 private:
   bool HasRightSignature(const llvm::Function *Func,
                          const llvm::StringRef Signature) const;
