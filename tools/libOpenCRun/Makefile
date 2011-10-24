@@ -18,3 +18,5 @@ USEDLIBS = opencrunCore.a opencrunDevice.a opencrunCPUDevice.a \
 	   opencrunCPUPasses.a opencrunPasses.a opencrunUtil.a opencrunSystem.a
 
 include $(LEVEL)/Makefile.common
+
+LIBS += -lrt

@@ -31,7 +31,7 @@ CXX.Flags += -Wno-cast-qual
 
 # TODO: implement the ICD-based benchmarking framework and link with OpenCL
 # instead of OpenCRun.
-BENCHLIBS = -lOCLBench -lOpenCRun -lrt
+BENCHLIBS = -lOCLBench -lOpenCRun
 
 # Add the absolute path to the dynamic library. This is ok because
 # we'll never install benchmarks.
