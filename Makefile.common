@@ -2,8 +2,5 @@
 # Include project configurations.
 include $(LEVEL)/Makefile.config
 
-# Include LLVM's Master Makefile.
+# Include LLVM's master Makefile.
 include $(LLVM_SRC_ROOT)/Makefile.common
-
-# Include custom rules.
-include $(PROJ_SRC_ROOT)/Makefile.rules

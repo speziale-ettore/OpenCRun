@@ -13,13 +13,10 @@ Integration with LLVM/CLANG
 ---------------------------
 
 The whole runtime heavily exploit LLVM/CLANG libraries and build system.
-LLVM/CLANG must be installed before building OpenCRun. More specifically, we
-require the following git revisions:
+LLVM/CLANG must be installed before building OpenCRun.
 
-* LLVM: 0066f9290e95dddedc47472e927319893929b05b
-* CLANG: a95b9f6dab394fea8378702e1a3d06e3cdfdc9c4
-
-In addition, CLANG must be patched with `clang-opencrun.diff`.
+Currently OpenCRun is going to be realigned with LLVM/CLANG trunk, so there may
+be impossible building it -- sorry.
 
 Current quality status
 ----------------------
