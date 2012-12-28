@@ -8,6 +8,6 @@ LEVEL = ..
 #
 # List all of the subdirectories that we will compile.
 #
-DIRS = OCLGen OCLBench
+DIRS = OCLGen
 
 include $(LEVEL)/Makefile.common

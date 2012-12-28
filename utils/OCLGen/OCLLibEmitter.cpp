@@ -1,158 +1,46 @@
 
+#include "llvm/TableGen/TableGenBackend.h"
+
 #include "OCLLibEmitter.h"
 
-#include "llvm/Support/ErrorHandling.h"
+using namespace opencrun;
 
-using namespace llvm;
+namespace {
 
-//
-// OCLLibEmitter implementation.
-//
+void EmitHeader(llvm::raw_ostream &OS, OCLLibBuiltin &Blt, unsigned SpecID);
 
-void OCLLibEmitter::EmitHeader(raw_ostream &OS,
-                               OCLLibBuiltin &Blt,
-                               unsigned SpecID) {
-  // Emit attributes.
-  OS << "__attribute__((";
-  for(unsigned I = 0, E = Blt.GetAttributesCount(); I != E; ++I) {
-    if(I != 0)
-      OS << ",";
-    OS << Blt.GetAttribute(I);
-  }
-  OS << "))\n";
+void EmitIncludes(llvm::raw_ostream &OS);
+void EmitTypes(llvm::raw_ostream &OS, llvm::RecordKeeper &R);
+void EmitWorkItemDecls(llvm::raw_ostream &OS);
+void EmitSynchronizationDecls(llvm::raw_ostream &OS);
+void EmitMacros(llvm::raw_ostream &OS);
+void EmitWorkItemRewritingMacros(llvm::raw_ostream &OS);
+void EmitSynchronizationRewritingMacros(llvm::raw_ostream &OS);
+void EmitBuiltinRewritingMacro(llvm::raw_ostream &OS, OCLLibBuiltin &Blt);
 
-  // Emit return type.
-  OS << Blt.GetReturnType(SpecID) << " ";
+void EmitImplementation(llvm::raw_ostream &OS,
+                        OCLLibBuiltin &Blt,
+                        unsigned SpecID);
+void EmitAutoDecl(llvm::raw_ostream &OS, OCLType &Ty, llvm::StringRef Name);
+void EmitAutoArrayDecl(llvm::raw_ostream &OS,
+                       OCLScalarType &BaseTy,
+                       int64_t N,
+                       llvm::StringRef Name);
 
-  // Emit name.
-  OS << "__builtin_ocl_" << Blt.GetName();
-
-  // Emit arguments.
-  OS << "(";
-  for(unsigned I = 0, E = Blt.GetParametersCount(); I != E; ++I) {
-    if(I != 0)
-      OS << ", ";
-    OS << Blt.GetParameterType(I, SpecID) << " x" << I;
-  }
-  OS << ")";
-}
+} // End anonymous namespace.
 
 //
-// OCLLibImplEmitter implementation.
+// EmitOCLDef implementation.
 //
 
-void OCLLibImplEmitter::run(raw_ostream &OS) {
-  OCLBuiltinContainer Blts = LoadOCLBuiltins(Records);
+void opencrun::EmitOCLDef(llvm::raw_ostream &OS, llvm::RecordKeeper &R) {
+  OCLBuiltinContainer Blts = LoadOCLBuiltins(R);
 
-  EmitSourceFileHeader("OpenCL C generic library implementation.", OS);
-
-  for(OCLBuiltinContainer::iterator I = Blts.begin(),
-                                    E = Blts.end();
-                                    I != E;
-                                    ++I)
-    for(unsigned J = 0, F = I->GetSpecializationsCount(); J != F; ++J) {
-      if(J != 0)
-        OS << "\n";
-      EmitImplementation(OS, *I, J);
-    }
-}
-
-void OCLLibImplEmitter::EmitImplementation(raw_ostream &OS,
-                                           OCLLibBuiltin &Blt,
-                                           unsigned SpecID) {
-  EmitHeader(OS, Blt, SpecID);
-
-  OS << " {\n";
-
-  // Base specialization has ID 0: emit user-given code.
-  if(SpecID == 0)
-    OS << "  " << Blt.GetBaseImplementation() << "\n";
-
-  // Recursive case, call base.
-  else {
-    OCLVectType *RetTy;
-    RetTy = dynamic_cast<OCLVectType *>(&Blt.GetReturnType(SpecID));
-    if(!RetTy)
-      llvm_unreachable("Not yet implemented");
-
-    // This variable holds return value in non-vector form.
-    OS.indent(2);
-    EmitArrayDecl(OS, RetTy->GetBaseType(), RetTy->GetWidth(), "RawRetValue");
-    OS << ";\n\n";
-
-    // Call base implementation for each vector element.
-    for(unsigned I = 0, E = RetTy->GetWidth(); I != E; ++I) {
-      // The i-th call writes the i-th element of the return value.
-      OS.indent(2);
-      OS << "RawRetValue[" << I << "] = " << "__builtin_ocl_" + Blt.GetName();
-      OS << "(";
-
-      // Push arguments.
-      for(unsigned J = 0, F = Blt.GetParametersCount(); J != F; ++J) {
-        if(J != 0)
-          OS << ", ";
-
-        // Non-gentype arguments are passed directly to callee.
-        OS << "x" << J;
-
-        // Gentype arguments are passed "element-wise".
-        if(dynamic_cast<OCLGenType *>(&Blt.GetParameterType(J)))
-          OS << "[" << I << "]";
-      }
-
-      OS << ");\n";
-    }
-
-    OS << "\n";
-
-    // Declare a return value in vector form.
-    OS.indent(2);
-    EmitDecl(OS, *RetTy, "RetValue");
-    OS << " = {\n";
-
-    // Emit the initializer.
-    for(unsigned I = 0, E = RetTy->GetWidth(); I != E; ++I) {
-      if(I != 0)
-        OS << ",\n";
-      OS.indent(4);
-      OS << "RawRetValue[" << I << "]";
-    }
-    OS << "\n";
-
-    OS.indent(2) << "};\n\n";
-
-    // Return the vector.
-    OS.indent(2) << "return RetValue;\n";
-  }
-
-  OS << "}\n";
-}
-
-void OCLLibImplEmitter::EmitDecl(raw_ostream &OS,
-                                 OCLType &Ty,
-                                 llvm::StringRef Name) {
-  OS << Ty << " " << Name;
-}
-
-void OCLLibImplEmitter::EmitArrayDecl(raw_ostream &OS,
-                                      OCLScalarType &BaseTy,
-                                      int64_t N,
-                                      llvm::StringRef Name) {
-  OS << BaseTy << " " << Name << "[" << N << "]";
-}
-
-//
-// OCLDefEmitter implementation.
-//
-
-void OCLDefEmitter::run(raw_ostream &OS) {
-  OCLBuiltinContainer Blts = LoadOCLBuiltins(Records);
-
-  EmitSourceFileHeader("OpenCL C library definitions.", OS);
+  llvm::emitSourceFileHeader("OpenCL C library definitions.", OS);
 
   // Emit opening guard.
-  OS << "#ifndef __CLANG_OCLDEF_H\n"
-     << "#define __CLANG_OCLDEF_H\n";
+  OS << "#ifndef __OPENCRUN_OCLDEF_H\n"
+     << "#define __OPENCRUN_OCLDEF_H\n";
 
   EmitIncludes(OS);
 
@@ -162,7 +50,7 @@ void OCLDefEmitter::run(raw_ostream &OS) {
      << "extern \"C\" {\n"
      << "#endif\n";
 
-  EmitTypes(OS);
+  EmitTypes(OS, R);
   EmitWorkItemDecls(OS);
   EmitSynchronizationDecls(OS);
 
@@ -206,14 +94,62 @@ void OCLDefEmitter::run(raw_ostream &OS) {
   OS << "\n#endif /* __CLANG_OCLDEF_H */\n";
 }
 
-void OCLDefEmitter::EmitIncludes(raw_ostream &OS) {
+//
+// EmitOCLLibImpl implementation.
+//
+
+void opencrun::EmitOCLLibImpl(llvm::raw_ostream &OS, llvm::RecordKeeper &R) {
+  OCLBuiltinContainer Blts = LoadOCLBuiltins(R);
+
+  llvm::emitSourceFileHeader("OpenCL C generic library implementation.", OS);
+
+  for(OCLBuiltinContainer::iterator I = Blts.begin(),
+                                    E = Blts.end();
+                                    I != E;
+                                    ++I)
+    for(unsigned J = 0, F = I->GetSpecializationsCount(); J != F; ++J) {
+      if(J != 0)
+        OS << "\n";
+      EmitImplementation(OS, *I, J);
+    }
+}
+
+namespace {
+
+void EmitHeader(llvm::raw_ostream &OS, OCLLibBuiltin &Blt, unsigned SpecID) {
+  // Emit attributes.
+  OS << "__attribute__((";
+  for(unsigned I = 0, E = Blt.GetAttributesCount(); I != E; ++I) {
+    if(I != 0)
+      OS << ",";
+    OS << Blt.GetAttribute(I);
+  }
+  OS << "))\n";
+
+  // Emit return type.
+  OS << Blt.GetReturnType(SpecID) << " ";
+
+  // Emit name.
+  OS << "__builtin_ocl_" << Blt.GetName();
+
+  // Emit arguments.
+  OS << "(";
+  for(unsigned I = 0, E = Blt.GetParametersCount(); I != E; ++I) {
+    if(I != 0)
+      OS << ", ";
+    OS << Blt.GetParameterType(I, SpecID) << " x" << I;
+  }
+  OS << ")";
+}
+
+void EmitIncludes(llvm::raw_ostream &OS) {
   OS << "\n"
      << "#include <float.h>\n"
      << "#include <stddef.h>\n"
      << "#include <stdint.h>\n";
 }
 
-void OCLDefEmitter::EmitTypes(raw_ostream &OS) {
+void EmitTypes(llvm::raw_ostream &OS, llvm::RecordKeeper &R) {
   // In OpenCL C unsigned types have a shortcut.
   OS << "\n"
      << "/* Built-in Scalar Data Types */\n"
@@ -224,7 +160,7 @@ void OCLDefEmitter::EmitTypes(raw_ostream &OS) {
      << "typedef unsigned long ulong;\n";
 
   // Emit vectors using definitions found in the .td files.
-  OCLVectTypeContainer Vectors = LoadOCLVectTypes(Records);
+  OCLVectTypeContainer Vectors = LoadOCLVectTypes(R);
 
   OS << "\n"
      << "/* Built-in Vector Data Types */\n"
@@ -248,7 +184,7 @@ void OCLDefEmitter::EmitTypes(raw_ostream &OS) {
      << "typedef ulong cl_mem_fence_flags;\n";
 }
 
-void OCLDefEmitter::EmitWorkItemDecls(raw_ostream &OS) {
+void EmitWorkItemDecls(llvm::raw_ostream &OS) {
   OS << "\n"
      << "/* Work-Item Functions */\n"
      << "\n"
@@ -262,14 +198,14 @@ void OCLDefEmitter::EmitWorkItemDecls(raw_ostream &OS) {
      << "size_t __builtin_ocl_get_global_offset(uint dimindx);\n";
 }
 
-void OCLDefEmitter::EmitSynchronizationDecls(raw_ostream &OS) {
+void EmitSynchronizationDecls(llvm::raw_ostream &OS) {
   OS << "\n"
      << "/* Synchronization Functions */\n"
      << "\n"
      << "void __builtin_ocl_barrier(cl_mem_fence_flags flags);\n";
 }
 
-void OCLDefEmitter::EmitMacros(raw_ostream &OS) {
+void EmitMacros(llvm::raw_ostream &OS) {
   // Math macros.
   OS << "\n"
      << "/*\n"
@@ -299,7 +235,7 @@ void OCLDefEmitter::EmitMacros(raw_ostream &OS) {
      << "#define CLK_GLOBAL_MEM_FENCE 1\n";
 }
 
-void OCLDefEmitter::EmitWorkItemRewritingMacros(raw_ostream &OS) {
+void EmitWorkItemRewritingMacros(llvm::raw_ostream &OS) {
   OS << "\n"
      << "/* Work-Item Rewriting Macros */\n"
      << "\n"
@@ -313,16 +249,99 @@ void OCLDefEmitter::EmitWorkItemRewritingMacros(raw_ostream &OS) {
      << "#define get_global_offset __builtin_ocl_get_global_offset\n";
 }
 
-void OCLDefEmitter::EmitSynchronizationRewritingMacros(raw_ostream &OS) {
+void EmitSynchronizationRewritingMacros(llvm::raw_ostream &OS) {
   OS << "\n"
      << "/* Synchronization Rewriting Macros */\n"
      << "\n"
      << "#define barrier __builtin_ocl_barrier\n";
 }
 
-void OCLDefEmitter::EmitBuiltinRewritingMacro(raw_ostream &OS,
-                                              OCLLibBuiltin &Blt) {
+void EmitBuiltinRewritingMacro(llvm::raw_ostream &OS, OCLLibBuiltin &Blt) {
   OS << "#define " << Blt.GetName() << " "
                    << "__builtin_ocl_" << Blt.GetName()
                    << "\n";
 }
+
+void EmitImplementation(llvm::raw_ostream &OS,
+                        OCLLibBuiltin &Blt,
+                        unsigned SpecID) {
+  EmitHeader(OS, Blt, SpecID);
+
+  OS << " {\n";
+
+  // Base specialization has ID 0: emit user-given code.
+  if(SpecID == 0)
+    OS << "  " << Blt.GetBaseImplementation() << "\n";
+
+  // Recursive case, call base.
+  else {
+    OCLVectType *RetTy;
+    RetTy = llvm::dyn_cast<OCLVectType>(&Blt.GetReturnType(SpecID));
+    if(!RetTy)
+      llvm_unreachable("Not yet implemented");
+
+    // This variable holds return value in non-vector form.
+    OS.indent(2);
+    EmitAutoArrayDecl(OS, RetTy->GetBaseType(), RetTy->GetWidth(), "RawRetValue");
+    OS << ";\n\n";
+
+    // Call base implementation for each vector element.
+    for(unsigned I = 0, E = RetTy->GetWidth(); I != E; ++I) {
+      // The i-th call writes the i-th element of the return value.
+      OS.indent(2);
+      OS << "RawRetValue[" << I << "] = " << "__builtin_ocl_" + Blt.GetName();
+      OS << "(";
+
+      // Push arguments.
+      for(unsigned J = 0, F = Blt.GetParametersCount(); J != F; ++J) {
+        if(J != 0)
+          OS << ", ";
+
+        // Non-gentype arguments are passed directly to callee.
+        OS << "x" << J;
+
+        // Gentype arguments are passed "element-wise".
+        if(llvm::isa<OCLGenType>(&Blt.GetParameterType(J)))
+          OS << "[" << I << "]";
+      }
+
+      OS << ");\n";
+    }
+
+    OS << "\n";
+
+    // Declare a return value in vector form.
+    OS.indent(2);
+    EmitAutoDecl(OS, *RetTy, "RetValue");
+    OS << " = {\n";
+
+    // Emit the initializer.
+    for(unsigned I = 0, E = RetTy->GetWidth(); I != E; ++I) {
+      if(I != 0)
+        OS << ",\n";
+      OS.indent(4);
+      OS << "RawRetValue[" << I << "]";
+    }
+    OS << "\n";
+
+    OS.indent(2) << "};\n\n";
+
+    // Return the vector.
+    OS.indent(2) << "return RetValue;\n";
+  }
+
+  OS << "}\n";
+}
+
+void EmitAutoDecl(llvm::raw_ostream &OS, OCLType &Ty, llvm::StringRef Name) {
+  OS << Ty << " " << Name;
+}
+
+void EmitAutoArrayDecl(llvm::raw_ostream &OS,
+                       OCLScalarType &BaseTy,
+                       int64_t N,
+                       llvm::StringRef Name) {
+  OS << BaseTy << " " << Name << "[" << N << "]";
+}
+
+} // End anonymous namespace.

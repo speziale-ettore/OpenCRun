@@ -2,37 +2,53 @@
 #ifndef OCLLIB_BUILTIN_H
 #define OCLLIB_BUILTIN_H
 
-#include "Record.h"
-
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/TableGen/Error.h"
+#include "llvm/TableGen/Record.h"
 
 #include <map>
 #include <vector>
 
-namespace llvm {
+namespace opencrun {
 
 class OCLType {
+public:
+  enum Type {
+    Scalar,
+    Vect,
+    Gen
+  };
+
 public:
   virtual ~OCLType() { }
 
 protected:
-  OCLType(llvm::StringRef Name) : Name(Name) { }
+  OCLType(Type TypeTy, llvm::StringRef Name) : TypeTy(TypeTy),
+                                               Name(Name) { }
 
 public:
+  Type GetType() const { return TypeTy; }
   std::string GetName() const { return Name; }
 
 private:
+  Type TypeTy;
   std::string Name;
 };
 
-inline raw_ostream &operator<<(raw_ostream &OS, const OCLType &Ty) {
+inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const OCLType &Ty) {
   return OS << Ty.GetName();
 }
 
 class OCLScalarType : public OCLType {
 public:
-  OCLScalarType(llvm::StringRef Name) : OCLType(BuildName(Name)) { }
+  static bool classof(const OCLType *Ty) {
+    return Ty->GetType() == OCLType::Scalar;
+  }
+
+public:
+  OCLScalarType(llvm::StringRef Name) : OCLType(OCLType::Scalar,
+                                                BuildName(Name)) { }
 
 private:
   std::string BuildName(llvm::StringRef Name);
@@ -40,8 +56,14 @@ private:
 
 class OCLVectType : public OCLType {
 public:
+  static bool classof(const OCLType *Ty) {
+    return Ty->GetType() == OCLType::Vect;
+  }
+
+public:
   OCLVectType(OCLScalarType &BaseType,
-              int64_t Width) : OCLType(BuildName(BaseType, Width)),
+              int64_t Width) : OCLType(OCLType::Vect,
+                                       BuildName(BaseType, Width)),
                                BaseType(BaseType),
                                Width(Width) { }
 
@@ -59,7 +81,16 @@ private:
 
 class OCLGenType : public OCLType {
 public:
-  OCLGenType(int64_t N) : OCLType(BuildName(N)), N(N) { }
+  static bool classof(const OCLType *Ty) {
+    return Ty->GetType() == OCLType::Gen;
+  }
+
+public:
+  OCLGenType(int64_t N) : OCLType(OCLType::Gen, BuildName(N)),
+                          N(N) { }
+
+public:
+  int64_t getN() { return N; }
 
 private:
   std::string BuildName(int64_t N);
@@ -79,7 +110,8 @@ private:
   std::string Name;
 };
 
-inline raw_ostream &operator<<(raw_ostream &OS, const OCLAttribute &Attr) {
+inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
+                                     const OCLAttribute &Attr) {
   return OS << Attr.GetName();
 }
 
@@ -89,7 +121,7 @@ public:
   typedef std::map<OCLGenType *, GenTypeSubsEntry> GenTypeSubsContainer;
 
 public:
-  OCLLibBuiltin(Record &R);
+  OCLLibBuiltin(llvm::Record &R);
 
   OCLLibBuiltin() : ReturnTy(NULL) { }
 
@@ -147,7 +179,7 @@ public:
 
   OCLType &GetParameterType(unsigned I) {
     if(I >= GetParametersCount())
-      throw "Out of range parameter index: " + utostr(I);
+      llvm::PrintFatalError("Out of range parameter index: " + llvm::utostr(I));
 
     return *ParamTys[I];
   }
@@ -158,7 +190,7 @@ public:
 
   OCLAttribute &GetAttribute(unsigned I) {
     if(I >= GetAttributesCount())
-      throw "Out of range attribute index: " + utostr(I);
+      llvm::PrintFatalError("Out of range attribute index: " + llvm::utostr(I));
 
     return *Attributes[I];
   }
@@ -174,10 +206,10 @@ private:
   std::string Name;
 
   OCLType *ReturnTy;
-  SmallVector<OCLType *, 4> ParamTys;
+  llvm::SmallVector<OCLType *, 4> ParamTys;
   GenTypeSubsContainer GenTypeSubs;
 
-  SmallVector<OCLAttribute *, 2> Attributes;
+  llvm::SmallVector<OCLAttribute *, 2> Attributes;
 
   std::string BaseImpl;
 };
@@ -185,9 +217,9 @@ private:
 typedef std::vector<OCLLibBuiltin> OCLBuiltinContainer;
 typedef std::vector<OCLVectType *> OCLVectTypeContainer;
 
-OCLBuiltinContainer LoadOCLBuiltins(const RecordKeeper &RC);
-OCLVectTypeContainer LoadOCLVectTypes(const RecordKeeper &RC);
+OCLBuiltinContainer LoadOCLBuiltins(const llvm::RecordKeeper &R);
+OCLVectTypeContainer LoadOCLVectTypes(const llvm::RecordKeeper &R);
 
-} // End namespace llvm.
+} // End namespace opencrun.
 
 #endif // OCLLIB_BUILTIN_H
