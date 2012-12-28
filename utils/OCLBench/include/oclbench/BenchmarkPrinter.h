@@ -1,5 +1,4 @@
 
-
 #ifndef OCLBENCH_BENCHMARKPRINTER_H
 #define OCLBENCH_BENCHMARKPRINTER_H
 
@@ -13,6 +12,9 @@ namespace oclbench {
 class BenchmarkResult;
 
 class BenchmarkPrinter {
+public:
+  virtual ~BenchmarkPrinter() { }
+
 public:
   virtual void BenchmarkStart(llvm::StringRef Bench) = 0;
   virtual void BenchmarkEnd(llvm::StringRef Bench) = 0;
